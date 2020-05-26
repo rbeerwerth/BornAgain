@@ -19,7 +19,7 @@
 SimulationOptions::SimulationOptions()
     : m_mc_integration(false), m_include_specular(false), m_use_avg_materials(false), m_mc_points(1)
 {
-    m_thread_info.n_threads = getHardwareConcurrency();
+    m_thread_info.n_threads = 1;//getHardwareConcurrency();
 }
 
 bool SimulationOptions::isIntegrate() const
@@ -36,7 +36,7 @@ void SimulationOptions::setMonteCarloIntegration(bool flag, size_t mc_points)
 void SimulationOptions::setNumberOfThreads(int nthreads)
 {
     if (nthreads == 0)
-        m_thread_info.n_threads = getHardwareConcurrency();
+        m_thread_info.n_threads = 1; //getHardwareConcurrency();
     else if (nthreads > 0)
         m_thread_info.n_threads = nthreads;
     else
