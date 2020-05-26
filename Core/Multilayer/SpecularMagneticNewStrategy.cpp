@@ -16,18 +16,21 @@
 #include "KzComputation.h"
 #include "PhysicalConstants.h"
 #include "Slice.h"
+#include <iostream>
 
 namespace
 {
-kvector_t magneticImpact(kvector_t B_field);
+double magneticSLD(kvector_t B_field);
 Eigen::Vector2cd eigenvalues(complex_t kz, double b_mag);
 Eigen::Vector2cd checkForUnderflow(const Eigen::Vector2cd& eigenvs);
 complex_t GetImExponential(complex_t exponent);
 
 // The factor 1e-18 is here to have unit: 1/T*nm^-2
 constexpr double magnetic_prefactor = PhysConsts::m_n * PhysConsts::g_factor_n * PhysConsts::mu_N
-                                      / PhysConsts::h_bar / PhysConsts::h_bar * 1e-18;
+                                      / PhysConsts::h_bar / PhysConsts::h_bar / 2. / M_PI * 1e-18;
 constexpr complex_t I(0.0, 1.0);
+
+
 } // namespace
 
 
@@ -52,6 +55,41 @@ SpecularMagneticNewStrategy::Execute(const std::vector<Slice>& slices,
     return result;
 }
 
+Eigen::Matrix2cd SpecularMagneticNewStrategy::computeP(MatrixRTCoefficients_v3& coeff)
+{
+    auto Lp = coeff.m_lambda(0) + coeff.m_lambda(1);
+    auto Lm = coeff.m_lambda(0) - coeff.m_lambda(1);
+
+    Eigen::Matrix2cd result;
+
+    auto b = coeff.m_b;
+
+    result << Lp + Lm * b.z(), Lm * ( b.x() - I * b.y() ),
+              Lm * ( b.x() + I * b.y() ), Lp - Lm * b.z();
+    result *= 0.5;
+
+    return result;
+}
+
+
+Eigen::Matrix2cd SpecularMagneticNewStrategy::computeInverseP(MatrixRTCoefficients_v3& coeff)
+{
+    auto Lp = coeff.m_lambda(0) + coeff.m_lambda(1);
+    auto Lm = coeff.m_lambda(0) - coeff.m_lambda(1);
+
+    Eigen::Matrix2cd result;
+
+    auto b = coeff.m_b;
+
+    result << Lp - Lm * b.z(), -Lm * ( b.x() - I * b.y() ),
+              -Lm * ( b.x() + I * b.y() ), Lp + Lm * b.z();
+    result *= 2./(Lp * Lp - Lm * Lm);
+
+    return result;
+}
+
+//Eigen::Matrix2cd SpecularMagneticNewStrategy::computeDelta(MatrixRTCoefficients_v3& coeff);
+
 std::vector<MatrixRTCoefficients_v3>
 SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
                                     const std::vector<complex_t>& kzs)
@@ -66,24 +104,61 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
     result.reserve(slices.size());
 
     const double kz_sign = kzs.front().real() > 0.0 ? 1.0 : -1.0; // save sign to restore it later
-    const kvector_t b_0 = magneticImpact(slices.front().bField());
-    result.emplace_back(kz_sign, eigenvalues(kzs.front(), 0.0), kvector_t{0.0, 0.0, 0.0});
+    auto B_0 = slices.front().bField();
+    result.emplace_back(kz_sign, eigenvalues(kzs.front(), 0.0), kvector_t{0.0, 0.0, 0.0}, 0.0);
     for (size_t i = 1, size = slices.size(); i < size; ++i) {
-        kvector_t b = magneticImpact(slices[i].bField()) - b_0;
-        result.emplace_back(kz_sign, checkForUnderflow(eigenvalues(kzs[i], b.mag())), b);
+        auto B = slices[i].bField() - B_0;
+        auto magnetic_SLD = magneticSLD(B);
+        result.emplace_back(kz_sign, checkForUnderflow(eigenvalues(kzs[i], magnetic_SLD)), B/B.mag(), magnetic_SLD);
     }
 
-    if (result.front().m_lambda == Eigen::Vector2cd::Zero()) {
-        std::for_each(result.begin(), result.end(), [](auto& coeff) { setNoTransmission(coeff); });
-        return result;
+    auto pm0  = computeP(result[0]);
+    auto pmi0 = computeInverseP(result[0]);
+
+    std::cout << "test" << std::endl;
+    std::cout << "pm0 = " << pm0 << std::endl;
+    std::cout << "pmi0 = " << pmi0 << std::endl;
+
+
+    std::cout << "pm0 * pmi0 = " << pm0 * pmi0 << std::endl;
+
+
+    // calculate the matrices M_i
+    for (size_t i = 0, size = slices.size(); i < size; ++i) {
+//        auto pmi = ;
+//        auto pm1 = ;
+//        auto delta = ;
+
     }
 
-    std::for_each(result.begin(), result.end(), [](auto& coeff) { calculateTR(coeff); });
-    nullifyBottomReflection(result.back());
-    propagateBackwards(result, slices);
-    propagateForwards(result, findNormalizationCoefficients(result.front()));
 
+
+    // calculate the total tranfer matrix M
+
+
+
+
+    // extract R
+
+
+
+
+
+
+    // old stuff from here
     return result;
+
+//    if (result.front().m_lambda == Eigen::Vector2cd::Zero()) {
+//        std::for_each(result.begin(), result.end(), [](auto& coeff) { setNoTransmission(coeff); });
+//        return result;
+//    }
+
+//    std::for_each(result.begin(), result.end(), [](auto& coeff) { calculateTR(coeff); });
+//    nullifyBottomReflection(result.back());
+//    propagateBackwards(result, slices);
+//    propagateForwards(result, findNormalizationCoefficients(result.front()));
+
+//    return result;
 }
 
 void SpecularMagneticNewStrategy::calculateTR(MatrixRTCoefficients_v3& coeff)
@@ -230,15 +305,15 @@ void SpecularMagneticNewStrategy::propagateForwards(std::vector<MatrixRTCoeffici
 
 namespace
 {
-kvector_t magneticImpact(kvector_t B_field)
+double magneticSLD(kvector_t B_field)
 {
-    return -magnetic_prefactor * B_field;
+    return magnetic_prefactor * B_field.mag();
 }
 
-Eigen::Vector2cd eigenvalues(complex_t kz, double b_mag)
+Eigen::Vector2cd eigenvalues(complex_t kz, double magnetic_SLD)
 {
     const complex_t a = kz * kz;
-    return {I * std::sqrt(a + b_mag), I * std::sqrt(a - b_mag)};
+    return {std::sqrt(a - 4. * M_PI * magnetic_SLD), std::sqrt(a + 4. * M_PI * magnetic_SLD)};
 }
 
 Eigen::Vector2cd checkForUnderflow(const Eigen::Vector2cd& eigenvs)
