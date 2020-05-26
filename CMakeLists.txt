@@ -83,22 +83,28 @@ endif()
 add_subdirectory(ThirdParty/common)
 add_subdirectory(ThirdParty/Fit)
 add_subdirectory(Fit)
-add_subdirectory(Tests/UnitTests/Fit)
 
 add_subdirectory(ThirdParty/Core)
 add_subdirectory(Core)
-add_subdirectory(Tests/UnitTests/Core)
-add_subdirectory(Tests/UnitTests/Numeric)
+
+if(UNITTESTS)
+    add_subdirectory(Tests/UnitTests/Fit)
+    add_subdirectory(Tests/UnitTests/Core)
+    add_subdirectory(Tests/UnitTests/Numeric)
+    
+    # functional tests (ctest)
+    add_subdirectory(Tests/Functional)
+endif()
 
 if(BORNAGAIN_GUI)
     include(SearchQt)
     add_subdirectory(ThirdParty/GUI)
     add_subdirectory(GUI)
-    add_subdirectory(Tests/UnitTests/GUI)
+    if(UNITTESTS)
+        add_subdirectory(Tests/UnitTests/GUI)
+    endif()
 endif()
 
-# functional tests (ctest)
-add_subdirectory(Tests/Functional)
 
 # after-install message
 add_subdirectory(cmake/bornagain)
