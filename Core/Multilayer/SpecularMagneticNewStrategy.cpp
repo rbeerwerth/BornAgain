@@ -27,7 +27,7 @@ complex_t GetImExponential(complex_t exponent);
 
 // The factor 1e-18 is here to have unit: 1/T*nm^-2
 constexpr double magnetic_prefactor = PhysConsts::m_n * PhysConsts::g_factor_n * PhysConsts::mu_N
-                                      / PhysConsts::h_bar / PhysConsts::h_bar / 2. / M_PI * 1e-18;
+                                      / PhysConsts::h_bar / PhysConsts::h_bar / 4. / M_PI * 1e-18;
 constexpr complex_t I(0.0, 1.0);
 
 
@@ -71,7 +71,6 @@ Eigen::Matrix2cd SpecularMagneticNewStrategy::computeP(MatrixRTCoefficients_v3& 
     return result;
 }
 
-
 Eigen::Matrix2cd SpecularMagneticNewStrategy::computeInverseP(MatrixRTCoefficients_v3& coeff)
 {
     auto Lp = coeff.m_lambda(0) + coeff.m_lambda(1);
@@ -109,11 +108,22 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
     for (size_t i = 1, size = slices.size(); i < size; ++i) {
         auto B = slices[i].bField() - B_0;
         auto magnetic_SLD = magneticSLD(B);
-        result.emplace_back(kz_sign, checkForUnderflow(eigenvalues(kzs[i], magnetic_SLD)), B/B.mag(), magnetic_SLD);
+        result.emplace_back(kz_sign, checkForUnderflow(eigenvalues(kzs[i], magnetic_SLD)),
+                            B.mag() != 0. ? B/B.mag() : kvector_t{0.0, 0.0, 0.0}, magnetic_SLD);
     }
 
-    auto pm0  = computeP(result[0]);
-    auto pmi0 = computeInverseP(result[0]);
+    auto testindex{1};
+
+    auto bi = result[testindex].m_b;
+
+    std::cout << "b = " << bi << std::endl;
+
+    if(testindex >= slices.size())
+        throw  std::runtime_error("Trying to access invalid slice");
+
+
+    auto pm0  = computeP(result[testindex]);
+    auto pmi0 = computeInverseP(result[testindex]);
 
     std::cout << "test" << std::endl;
     std::cout << "pm0 = " << pm0 << std::endl;
@@ -124,16 +134,29 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
 
 
     // calculate the matrices M_i
-    for (size_t i = 0, size = slices.size(); i < size; ++i) {
-//        auto pmi = ;
+    for (size_t i = 0, interfaces = slices.size() - 1; i < interfaces; ++i) {
+        auto mproduct = computeInverseP(result[i]) * computeP(result[i+1]);
+        auto mp = Eigen::Matrix2cd::Identity() + mproduct;
+        auto mm = Eigen::Matrix2cd::Identity() - mproduct;
 //        auto pm1 = ;
 //        auto delta = ;
+//        auto Mi = Eigen::Matrix4cd::Zero();
+        result[i].Mi = Eigen::Matrix4cd::Zero();
+        result[i].Mi.block<2,2>(0, 0) = mp;
+        result[i].Mi.block<2,2>(0, 2) = mm;
+        result[i].Mi.block<2,2>(2, 0) = mm;
+        result[i].Mi.block<2,2>(2, 2) = mp;
 
+
+        result[i].Mi /= 0.5;
+
+        std::cout << "i = " << i << std::endl;
+        std::cout << "Mi = " << result[i].Mi << std::endl;
     }
 
 
-
     // calculate the total tranfer matrix M
+    result[0].M = result[0].Mi;
 
 
 
@@ -145,8 +168,9 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
 
 
 
-    // old stuff from here
     return result;
+
+    // old stuff from here
 
 //    if (result.front().m_lambda == Eigen::Vector2cd::Zero()) {
 //        std::for_each(result.begin(), result.end(), [](auto& coeff) { setNoTransmission(coeff); });
@@ -313,7 +337,7 @@ double magneticSLD(kvector_t B_field)
 Eigen::Vector2cd eigenvalues(complex_t kz, double magnetic_SLD)
 {
     const complex_t a = kz * kz;
-    return {std::sqrt(a - 4. * M_PI * magnetic_SLD), std::sqrt(a + 4. * M_PI * magnetic_SLD)};
+    return {std::sqrt(a + 4. * M_PI * magnetic_SLD), std::sqrt(a - 4. * M_PI * magnetic_SLD)};
 }
 
 Eigen::Vector2cd checkForUnderflow(const Eigen::Vector2cd& eigenvs)
