@@ -14,6 +14,7 @@
 
 #include "SpecularStrategyBuilder.h"
 #include "MultiLayerUtils.h"
+//#include "SpecularMagneticStrategy.h"
 #include "SpecularMagneticNewStrategy.h"
 #include "SpecularScalarNCStrategy.h"
 #include "SpecularScalarTanhStrategy.h"

@@ -41,6 +41,12 @@ public:
     static std::vector<MatrixRTCoefficients_v3> computeTR(const std::vector<Slice>& slices,
                                                           const std::vector<complex_t>& kzs);
 
+    static Eigen::Matrix2cd computeP(MatrixRTCoefficients_v3& coeff);
+    static Eigen::Matrix2cd computeInverseP(MatrixRTCoefficients_v3& coeff);
+    static Eigen::Matrix2cd computeDelta(MatrixRTCoefficients_v3& coeff);
+
+
+    // old things
     //! Computes frobenius matrices for multilayer solution
     static void calculateTR(MatrixRTCoefficients_v3& coeff);
     static void calculateZeroFieldTR(MatrixRTCoefficients_v3& coeff);
