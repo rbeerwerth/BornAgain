@@ -74,10 +74,17 @@ double SpecularMatrixTerm::intensity(const SpecularSimulationElement& elem,
     const auto& polarization = elem.polarizationHandler().getPolarization();
     const auto& analyzer = elem.polarizationHandler().getAnalyzerOperator();
 
-    // constructing reflection operator
+    // construct the reflection operator
+    auto M = coeff->getM();
+    auto denominator = M(0,1) * M(1, 0) - M(0, 0) * M(1, 1);
+
     Eigen::Matrix2cd R;
-    R.col(0) = coeff->R1plus() + coeff->R2plus();
-    R.col(1) = coeff->R1min() + coeff->R2min();
+    R(0, 0) = M(2, 1) * M(1, 0) - M(2, 0) * M(1, 1);
+    R(0, 1) = M(2, 0) * M(0, 1) - M(0, 0) * M(2, 1);
+    R(1, 1) = M(3, 0) * M(0, 1) - M(3, 1) * M(0, 0);
+    R(1, 0) = M(3, 1) * M(1, 0) - M(3, 0) * M(1, 1);
+
+    R /= denominator;
 
     const complex_t result = (polarization * R.adjoint() * analyzer * R).trace();
 

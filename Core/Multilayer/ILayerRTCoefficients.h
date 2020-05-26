@@ -42,6 +42,7 @@ public:
     virtual Eigen::Vector2cd R2min() const = 0;
     //! Returns z-part of the two wavevector eigenmodes
     virtual Eigen::Vector2cd getKz() const = 0;
+
     //! Scalar value getters; these throw errors by default as they should only
     //! be used when the derived object is really scalar
 #endif
@@ -59,6 +60,11 @@ public:
     {
         throw Exceptions::NotImplementedException("ILayerRTCoefficients::"
                                                   "getScalarKz(): coefficients are not scalar.");
+    }
+
+    virtual Eigen::Matrix4cd getM() const
+    {
+        throw Exceptions::NotImplementedException("Only defined for Matrix coefficeints");
     }
 };
 
