@@ -17,6 +17,7 @@
 #include "PhysicalConstants.h"
 #include "Slice.h"
 #include <iostream>
+#include <iomanip>
 #include <unsupported/Eigen/MatrixFunctions>
 
 namespace
@@ -98,7 +99,7 @@ Eigen::Matrix2cd SpecularMagneticNewStrategy::computeDelta(MatrixRTCoefficients_
 {
     auto b = coeff.m_b;
 
-    std::cout << "b = " << b << std::endl;
+//    std::cout << "b = " << b << std::endl;
 
     Eigen::Matrix2cd result;
     auto Lp = prefactor * I * 0.5 * thickness * (coeff.m_lambda(0) + coeff.m_lambda(1));
@@ -121,11 +122,15 @@ Eigen::Matrix2cd SpecularMagneticNewStrategy::computeDelta(MatrixRTCoefficients_
 //    std::cout << "Q.+ * Q = " << Q.adjoint() * Q << std::endl;
 //    Eigen::Matrix2cd exp2;
 //    return result;
+    auto && cmpfct = [](const auto & cp1, const auto & cp2 ){ return std::norm(cp1) < std::norm(cp2); };
+    auto && maxExp = std::max( {std::exp(Lp), std::exp(Lm), std::exp(-Lm)}, cmpfct );
 
 
+    auto exp1 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({std::exp(Lp), std::exp(Lp)}) );
+    auto exp2 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({std::exp(Lm), std::exp(-Lm)}) );
 
-    auto exp1 = Eigen::DiagonalMatrix<complex_t, 2>({std::exp(Lp), std::exp(Lp)});
-    auto exp2 = Eigen::DiagonalMatrix<complex_t, 2>({std::exp(Lm), std::exp(-Lm)});
+//    std::cout << "exp1 = " << exp1 << std::endl;
+//    std::cout << "exp2 = " << exp2 << std::endl;
 
 //    Eigen::Matrix2cd result2
 
@@ -140,18 +145,17 @@ Eigen::Matrix2cd SpecularMagneticNewStrategy::computeDelta(MatrixRTCoefficients_
 //    result = exp1;
 //    result = Q * exp2 * Q.adjoint();
 //    std::cout << "Q = " << Q << std::endl;
-    std::cout << "exp1 = " << Eigen::Matrix2cd( exp1 ) << std::endl;
-    std::cout << "exp2 = " << Eigen::Matrix2cd( exp2 ) << std::endl;
+//    std::cout << "exp1 = " << Eigen::Matrix2cd( exp1 ) << std::endl;
+//    std::cout << "exp2 = " << Eigen::Matrix2cd( exp2 ) << std::endl;
     std::cout << "delta = " << result << std::endl;
 
-//    return result;
+//    result /= det;
+
+    return result;
     // lazy way
 //    auto pm = prefactor * I * thickness * computeP(coeff);
-
 //    auto expmatrix = pm.exp();
-//    std::cout << "delta 2 = " << expmatrix << std::endl;
 //    return expmatrix;
-    return result;
 }
 
 std::vector<MatrixRTCoefficients_v3>
@@ -210,7 +214,7 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
                                          std::exp(I * slices[i].thickness() * result[i].m_lambda(1) ) << " " <<
                                          std::exp(-I * slices[i].thickness() * result[i].m_lambda(1) ) << std::endl;
 
-        auto mproduct = computeInverseP(result[i]) * computeP(result[i+1]);
+        auto mproduct = Eigen::Matrix2cd( computeInverseP(result[i]) * computeP(result[i+1]) );
         auto mp = Eigen::Matrix2cd::Identity() + mproduct;
         auto mm = Eigen::Matrix2cd::Identity() - mproduct;
 //        auto pm1 = ;
@@ -220,8 +224,15 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
 //        std::cout << "delta = " << delta << std::endl;
 //        std::cout << "delta^* = " << deltaInv << std::endl;
 
+        auto detDeltaInv = deltaInv(0, 0) * deltaInv(1, 1) - deltaInv(1, 0) * deltaInv(0, 1);
+
+        auto Lp = -1.* I * 0.5 * slices[i].thickness() * (result[i].m_lambda(0) + result[i].m_lambda(1));
+        auto Lm = -1.* I * 0.5 * slices[i].thickness() * (result[i].m_lambda(0) - result[i].m_lambda(1));
+
+        auto detExact = std::exp(Lp) * std::exp(Lp) * std::exp(Lm) * std::exp(-Lm);
+
         std::cout << "det(delta) = " << delta(0, 0) * delta(1, 1) - delta(1, 0) * delta(0, 1) << std::endl;
-        std::cout << "det(delta^*) = " << deltaInv(0, 0) * deltaInv(1, 1) - deltaInv(1, 0) * deltaInv(0, 1) << std::endl;
+        std::cout << "det(delta^*) = " << detDeltaInv << std::endl;
 
 
         result[i].Mi = Eigen::Matrix4cd::Zero();
@@ -238,11 +249,22 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
 
 
         result[i].Mi /= 0.5;
+//        result[i].Mi /= detExact;
 
 //        std::cout << "i = " << i << std::endl;
         std::cout << "Mi = " << result[i].Mi << std::endl;
 
         std::cout << "det(Mi) = " << result[i].Mi(0, 1) * result[i].Mi(1, 0) - result[i].Mi(1, 1) * result[i].Mi(0, 0) << std::endl;
+
+        std::cout << "=================================================================================" << std::endl;
+        std::cout << std::setprecision(16) << "pm-1 pm+1 = " << mproduct << std::endl;
+//        std::cout << "pm-1 pm+1 = " << mproduct << std::endl;
+        std::cout << std::setprecision(16) << "delta* = " << deltaInv << std::endl;
+        std::cout << std::setprecision(16) << "delta  = " << delta << std::endl;
+
+
+        std::cout << "=================================================================================" << std::endl;
+
 
     }
 

@@ -84,6 +84,9 @@ double SpecularMatrixTerm::intensity(const SpecularSimulationElement& elem,
 
     std::cout << "denom = " << denominator << std::endl;
 
+    std::cout << "rpp = " << M(2, 1) * M(1, 0) - M(2, 0) * M(1, 1) << std::endl;
+    std::cout << "rmm = " << M(3, 0) * M(0, 1) - M(3, 1) * M(0, 0) << std::endl;
+
     Eigen::Matrix2cd R;
     R(0, 0) = M(2, 1) * M(1, 0) - M(2, 0) * M(1, 1);
     R(0, 1) = M(2, 0) * M(0, 1) - M(0, 0) * M(2, 1);
