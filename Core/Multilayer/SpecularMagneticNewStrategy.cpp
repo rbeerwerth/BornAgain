@@ -129,8 +129,8 @@ Eigen::Matrix2cd SpecularMagneticNewStrategy::computeDelta(MatrixRTCoefficients_
     auto exp1 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({std::exp(Lp), std::exp(Lp)}) );
     auto exp2 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({std::exp(Lm), std::exp(-Lm)}) );
 
-//    std::cout << "exp1 = " << exp1 << std::endl;
-//    std::cout << "exp2 = " << exp2 << std::endl;
+    std::cout << "exp1 = " << exp1 << std::endl;
+    std::cout << "exp2 = " << exp2 << std::endl;
 
 //    Eigen::Matrix2cd result2
 
