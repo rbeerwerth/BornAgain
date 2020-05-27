@@ -17,6 +17,7 @@
 #include "PhysicalConstants.h"
 #include "Slice.h"
 #include <iostream>
+#include <unsupported/Eigen/MatrixFunctions>
 
 namespace
 {
@@ -87,7 +88,38 @@ Eigen::Matrix2cd SpecularMagneticNewStrategy::computeInverseP(MatrixRTCoefficien
     return result;
 }
 
-//Eigen::Matrix2cd SpecularMagneticNewStrategy::computeDelta(MatrixRTCoefficients_v3& coeff);
+Eigen::Matrix2cd SpecularMagneticNewStrategy::computeDelta(MatrixRTCoefficients_v3& coeff, double thickness, double prefactor)
+{
+    auto b = coeff.m_b;
+
+    auto result = Eigen::Matrix2cd::Zero();
+    auto Lp = prefactor * I * 0.5 * thickness * (coeff.m_lambda(0) + coeff.m_lambda(1));
+    auto Lm = prefactor * I * 0.5 * thickness * (coeff.m_lambda(0) - coeff.m_lambda(1));
+
+
+    auto det = std::exp(Lp) * std::exp(Lp) * std::exp(Lm) * std::exp(Lm);
+
+    std::cout << "det(Delta) (in: computeDelta) = " << det << std::endl;
+
+//    auto Q = Eigen::Matrix2cd::Zero();
+    Eigen::Matrix2cd Q;
+
+    auto factor1 = std::sqrt(2. * ( 1. + b.z()));
+    auto factor2 = std::sqrt(2. * ( 1. - b.z()));
+
+    Q << (1. + b.z()) / factor1, (b.z() - 1.) / factor2,
+            (b.x() + I * b.y()) / factor1, (b.x() + I * b.y()) / factor2;
+
+    std::cout << "Q.+ * Q = " << Q.adjoint() * Q << std::endl;
+    Eigen::Matrix2cd exp2;
+//    return result;
+    // lazy way
+    auto pm = prefactor * I * thickness * computeP(coeff);
+
+    auto expmatrix = pm.exp();
+//    pm.det();
+    return expmatrix;
+}
 
 std::vector<MatrixRTCoefficients_v3>
 SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
@@ -116,7 +148,7 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
 
     auto bi = result[testindex].m_b;
 
-    std::cout << "b = " << bi << std::endl;
+//    std::cout << "b = " << bi << std::endl;
 
     if(testindex >= slices.size())
         throw  std::runtime_error("Trying to access invalid slice");
@@ -125,41 +157,76 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
     auto pm0  = computeP(result[testindex]);
     auto pmi0 = computeInverseP(result[testindex]);
 
-    std::cout << "test" << std::endl;
-    std::cout << "pm0 = " << pm0 << std::endl;
-    std::cout << "pmi0 = " << pmi0 << std::endl;
+//    std::cout << "test" << std::endl;
+//    std::cout << "pm0 = " << pm0 << std::endl;
+//    std::cout << "pmi0 = " << pmi0 << std::endl;
 
 
-    std::cout << "pm0 * pmi0 = " << pm0 * pmi0 << std::endl;
+//    std::cout << "pm0 * pmi0 = " << pm0 * pmi0 << std::endl;
 
 
     // calculate the matrices M_i
     for (size_t i = 0, interfaces = slices.size() - 1; i < interfaces; ++i) {
+
+        std::cout << "===================\ni = "<< i << std::endl;
+
+        std::cout << "lp = " << result[i].m_lambda(0) << " lm = " << result[i].m_lambda(1) << std::endl;
+        std::cout << "Lp = " << result[i].m_lambda(0) + result[i].m_lambda(1) << " Lm = " << result[i].m_lambda(0) - result[i].m_lambda(1) << std::endl;
+        std::cout << "exponentials: " << std::exp(I * slices[i].thickness() * result[i].m_lambda(0) ) << " " <<
+                                         std::exp(-I * slices[i].thickness() * result[i].m_lambda(0) ) << " " <<
+                                         std::exp(I * slices[i].thickness() * result[i].m_lambda(1) ) << " " <<
+                                         std::exp(-I * slices[i].thickness() * result[i].m_lambda(1) ) << std::endl;
+
         auto mproduct = computeInverseP(result[i]) * computeP(result[i+1]);
         auto mp = Eigen::Matrix2cd::Identity() + mproduct;
         auto mm = Eigen::Matrix2cd::Identity() - mproduct;
 //        auto pm1 = ;
-//        auto delta = ;
+        auto delta = computeDelta(result[i], slices[i].thickness(), 1.);
+        auto deltaInv = computeDelta(result[i], slices[i].thickness(), -1.);
 //        auto Mi = Eigen::Matrix4cd::Zero();
+
+        std::cout << "det(delta) = " << delta(0, 0) * delta(1, 1) - delta(1, 0) * delta(0, 1) << std::endl;
+        std::cout << "det(delta^*) = " << deltaInv(0, 0) * deltaInv(1, 1) - deltaInv(1, 0) * deltaInv(0, 1) << std::endl;
+
+
         result[i].Mi = Eigen::Matrix4cd::Zero();
-        result[i].Mi.block<2,2>(0, 0) = mp;
-        result[i].Mi.block<2,2>(0, 2) = mm;
-        result[i].Mi.block<2,2>(2, 0) = mm;
-        result[i].Mi.block<2,2>(2, 2) = mp;
+        result[i].Mi.block<2,2>(0, 0) = deltaInv * mp;
+        result[i].Mi.block<2,2>(0, 2) = deltaInv * mm;
+        result[i].Mi.block<2,2>(2, 0) = delta * mm;
+        result[i].Mi.block<2,2>(2, 2) = delta * mp;
+
+        std::cout << "delta = " << delta << std::endl;
+        std::cout << "delta^* = " << deltaInv << std::endl;
+
+//        result[i].Mi.block<2,2>(0, 0) = mp;
+//        result[i].Mi.block<2,2>(0, 2) = mm;
+//        result[i].Mi.block<2,2>(2, 0) = mm;
+//        result[i].Mi.block<2,2>(2, 2) = mp;
 
 
         result[i].Mi /= 0.5;
 
-        std::cout << "i = " << i << std::endl;
+//        std::cout << "i = " << i << std::endl;
         std::cout << "Mi = " << result[i].Mi << std::endl;
+
+        std::cout << "det(Mi) = " << result[i].Mi(0, 1) * result[i].Mi(1, 0) - result[i].Mi(1, 1) * result[i].Mi(0, 0) << std::endl;
+
     }
 
 
     // calculate the total tranfer matrix M
-    result[0].M = result[0].Mi;
+
+    if(slices.size() == 2)
+        result[0].M = result[0].Mi;
+
+    else
+        result[slices.size()-2].M = result[slices.size()-2].Mi;
+
+    for (int i = slices.size() - 3; i >= 0; --i)
+        result[i].M = result[i].Mi * result[i+1].M;
 
 
-
+    std::cout << "M = " << result.front().M << std::endl;
 
     // extract R
 
