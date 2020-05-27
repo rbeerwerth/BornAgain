@@ -17,6 +17,7 @@
 #include "ScalarRTCoefficients.h"
 #include "SpecularScalarStrategy.h"
 #include "SpecularSimulationElement.h"
+#include <iostream>
 
 SpecularComputationTerm::SpecularComputationTerm(std::unique_ptr<ISpecularStrategy> strategy)
     : m_Strategy(std::move(strategy)){};
@@ -76,7 +77,12 @@ double SpecularMatrixTerm::intensity(const SpecularSimulationElement& elem,
 
     // construct the reflection operator
     auto M = coeff->getM();
+
+//    std::cout << "M = " << M << std::endl;
+
     auto denominator = M(0,1) * M(1, 0) - M(0, 0) * M(1, 1);
+
+    std::cout << "denom = " << denominator << std::endl;
 
     Eigen::Matrix2cd R;
     R(0, 0) = M(2, 1) * M(1, 0) - M(2, 0) * M(1, 1);
