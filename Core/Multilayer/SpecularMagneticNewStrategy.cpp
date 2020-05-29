@@ -95,7 +95,8 @@ Eigen::Matrix2cd SpecularMagneticNewStrategy::computeInverseP(MatrixRTCoefficien
 
 
 
-Eigen::Matrix2cd SpecularMagneticNewStrategy::computeDelta(MatrixRTCoefficients_v3& coeff, double thickness, double prefactor)
+std::pair<Eigen::Matrix2cd, Eigen::Matrix2cd> SpecularMagneticNewStrategy::computeDelta(MatrixRTCoefficients_v3& coeff, double thickness, double prefactor)
+//Eigen::Matrix2cd SpecularMagneticNewStrategy::computeDelta(MatrixRTCoefficients_v3& coeff, double thickness, double prefactor)
 {
     auto b = coeff.m_b;
 
@@ -103,16 +104,18 @@ Eigen::Matrix2cd SpecularMagneticNewStrategy::computeDelta(MatrixRTCoefficients_
     auto && cmpfct = [](const auto & cp1, const auto & cp2 ){ return std::norm(cp1) < std::norm(cp2); };
 
     Eigen::Matrix2cd result;
-    auto Lp = I * 0.5 * thickness * (coeff.m_lambda(0) + coeff.m_lambda(1));
-    auto Lm = I * 0.5 * thickness * (coeff.m_lambda(0) - coeff.m_lambda(1));
+    Eigen::Matrix2cd deltaSmall;
+    Eigen::Matrix2cd deltaLarge;
+    auto Lp = prefactor * I * 0.5 * thickness * (coeff.m_lambda(0) + coeff.m_lambda(1));
+    auto Lm = prefactor * I * 0.5 * thickness * (coeff.m_lambda(0) - coeff.m_lambda(1));
 
 //    auto scaling1 = std::max( {std::exp(Lp), std::exp(-1. * Lp)}, cmpfct );
 //    auto scaling2 = std::max( {std::exp(Lm), std::exp(-1. * Lm)}, cmpfct );
-    auto scaling1 = 1.;
-    auto scaling2 = 1.;
+//    auto scaling1 = 1.;
+//    auto scaling2 = 1.;
 
-    Lp *= prefactor;
-    Lm *= prefactor;
+//    Lp *= prefactor;
+//    Lm *= prefactor;
 
 //    std::cout << "======================= computeDelta(" << prefactor << ")" << std::endl;
 
@@ -139,9 +142,9 @@ Eigen::Matrix2cd SpecularMagneticNewStrategy::computeDelta(MatrixRTCoefficients_
 //    std::cout << "scaling2 = " << scaling2 << std::endl;
 
     auto exp1 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({std::exp(Lp), std::exp(Lp) }) ) ;
-    exp1 /= scaling1;
+//    exp1 /= scaling1;
     auto exp2 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({std::exp(Lm), std::exp(-Lm)}) );
-    exp2 /= scaling2;
+//    exp2 /= scaling2;
 
 
 
@@ -173,9 +176,15 @@ Eigen::Matrix2cd SpecularMagneticNewStrategy::computeDelta(MatrixRTCoefficients_
         std::swap(exp2Large, exp2Small);
 
 //    result = Q * exp2 * Q.adjoint();
-
-    auto deltaSmall = exp1 * Q * exp2Small * Q.adjoint();
-    auto deltaLarge = exp1 * Q * exp2Large * Q.adjoint();
+    if (b.mag() == 1.)
+    {
+        deltaSmall = exp1 * Q * exp2Small * Q.adjoint();
+        deltaLarge = exp1 * Q * exp2Large * Q.adjoint();
+    }else if(b.mag() == 0.)
+    {
+        deltaSmall = exp1 * exp2Small;
+        deltaLarge = exp1 * exp2Large;
+    }
 
     std::cout << "result = " << result << std::endl;
     std::cout << "deltaS = " << deltaSmall << std::endl;
@@ -195,7 +204,9 @@ Eigen::Matrix2cd SpecularMagneticNewStrategy::computeDelta(MatrixRTCoefficients_
     std::cout << "det2(Delta) = " << det2 << std::endl;
     std::cout << "fancydet(Delta) = " << separatedDet << std::endl;
 
-    return result;
+//    return result;
+    return std::make_pair(deltaLarge, deltaSmall);
+
     // lazy way
 //    auto pm = prefactor * I * thickness * computeP(coeff);
 //    auto expmatrix = pm.exp();
@@ -262,18 +273,26 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
         auto mp = Eigen::Matrix2cd::Identity() + mproduct;
         auto mm = Eigen::Matrix2cd::Identity() - mproduct;
 //        auto pm1 = ;
-        auto delta = computeDelta(result[i], slices[i].thickness(), 1.);
-        auto deltaInv = computeDelta(result[i], slices[i].thickness(), -1.);
+        auto deltaTemp = computeDelta(result[i], slices[i].thickness(), 1.);
+        auto deltaInvTemp = computeDelta(result[i], slices[i].thickness(), -1.);
+
+        auto delta = Eigen::Matrix2cd( std::get<0>(deltaTemp) + std::get<1>(deltaTemp) );
+        auto deltaInv = Eigen::Matrix2cd( std::get<0>(deltaInvTemp) + std::get<1>(deltaInvTemp) );
+
+//        auto delta    = computeDelta(result[i], slices[i].thickness(), 1.);
+//        auto deltaInv = computeDelta(result[i], slices[i].thickness(), -1.);
+
+
 //        auto Mi = Eigen::Matrix4cd::Zero();
 //        std::cout << "delta = " << delta << std::endl;
 //        std::cout << "delta^* = " << deltaInv << std::endl;
 
-        auto detDeltaInv = deltaInv(0, 0) * deltaInv(1, 1) - deltaInv(1, 0) * deltaInv(0, 1);
+//        auto detDeltaInv = deltaInv(0, 0) * deltaInv(1, 1) - deltaInv(1, 0) * deltaInv(0, 1);
 
-        auto Lp = -1.* I * 0.5 * slices[i].thickness() * (result[i].m_lambda(0) + result[i].m_lambda(1));
-        auto Lm = -1.* I * 0.5 * slices[i].thickness() * (result[i].m_lambda(0) - result[i].m_lambda(1));
+//        auto Lp = -1.* I * 0.5 * slices[i].thickness() * (result[i].m_lambda(0) + result[i].m_lambda(1));
+//        auto Lm = -1.* I * 0.5 * slices[i].thickness() * (result[i].m_lambda(0) - result[i].m_lambda(1));
 
-        auto detExact = std::exp(Lp) * std::exp(Lp) * std::exp(Lm) * std::exp(-Lm);
+//        auto detExact = std::exp(Lp) * std::exp(Lp) * std::exp(Lm) * std::exp(-Lm);
 
 //        std::cout << "det(delta) = " << delta(0, 0) * delta(1, 1) - delta(1, 0) * delta(0, 1) << std::endl;
 //        std::cout << "det(delta^*) = " << detDeltaInv << std::endl;
@@ -295,7 +314,7 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
         result[i].Mi /= 0.5;
 //        result[i].Mi /= detExact;
 
-//        std::cout << "Mi = " << result[i].Mi << std::endl;
+        std::cout << "Mi = " << result[i].Mi << std::endl;
 //        std::cout << "det(Mi) = " << result[i].Mi(0, 1) * result[i].Mi(1, 0) - result[i].Mi(1, 1) * result[i].Mi(0, 0) << std::endl;
 
 
@@ -323,7 +342,7 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
         result[i].M = result[i].Mi * result[i+1].M;
 
 
-//    std::cout << "M = " << result.front().M << std::endl;
+    std::cout << "M = " << result.front().M << std::endl;
 
     // extract R
 
