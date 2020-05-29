@@ -43,7 +43,8 @@ public:
 
     static Eigen::Matrix2cd computeP(MatrixRTCoefficients_v3& coeff);
     static Eigen::Matrix2cd computeInverseP(MatrixRTCoefficients_v3& coeff);
-    static Eigen::Matrix2cd computeDelta(MatrixRTCoefficients_v3& coeff, double thickness, double prefactor);
+    static std::pair<Eigen::Matrix2cd, Eigen::Matrix2cd> computeDelta(MatrixRTCoefficients_v3& coeff, double thickness, double prefactor);
+//    static Eigen::Matrix2cd computeDelta(MatrixRTCoefficients_v3& coeff, double thickness, double prefactor);
 
 
     // old things
