@@ -88,9 +88,20 @@ double SpecularMatrixTerm::intensity(const SpecularSimulationElement& elem,
 //        result -= (ML(k0, k1) * MM(l0, l1) + MM(k0, k1) * ML(l0, l1) + MM(k0, k1) * MM(l0, l1));
 //        result += ML(i0, i1) * MS(j0, j1) + MS(i0, i1) * ML(j0, j1);
 //        result -= ( ML(k0, k1) * MS(l0, l1) + MS(k0, k1) * ML(l0, l1) );
+
+//        auto result = MM(i0, i1) * MM(j0, j1) - MM(k0, k1) * MM(l0, l1);
+//            result += MM(i0, i1) * MS(j0, j1) + MS(i0, i1) * MM(j0, j1);
+//            result -= (MM(k0, k1) * MS(l0, l1) + MS(k0, k1) * MM(l0, l1));
+//            result += MS(i0, i1) * MS(j0, j1) - MS(k0, k1) * MS(l0, l1);
+
+        // TODO: test or argue why MM(i0, i1) * MM(j0, j1) - MM(k0, k1) * MM(l0, l1);
+        // always vanishes
+
         auto result = MM(i0, i1) * MS(j0, j1) + MS(i0, i1) * MM(j0, j1);
-        result -= ( MM(k0, k1) * MS(l0, l1) + MS(k0, k1) * MM(l0, l1) );
-        result += MS(i0, i1) * MS(j0, j1) - (MS(k0, k1) * MS(l0, l1));
+            result -= (MM(k0, k1) * MS(l0, l1) + MS(k0, k1) * MM(l0, l1));
+            result += MS(i0, i1) * MS(j0, j1) - MS(k0, k1) * MS(l0, l1);
+//        auto result = MS(i0, i1) * MS(j0, j1) - MS(k0, k1) * MS(l0, l1);
+
 
         return result;
     };
@@ -120,18 +131,40 @@ double SpecularMatrixTerm::intensity(const SpecularSimulationElement& elem,
 //    R(1, 1) = M(3, 0) * M(0, 1) - M(3, 1) * M(0, 0);
 //    R(1, 0) = M(3, 1) * M(1, 0) - M(3, 0) * M(1, 1);
 
-    std::cout << "denom  = " << denominator << std::endl;
-    std::cout << "  rpp = " << R(0, 0) << std::endl;
-    std::cout << "  rmm = " << R(1, 1) << std::endl;
+//    std::cout << "denom  = " << denominator << std::endl;
+//    std::cout << "   rpp = " << R(0, 0) << std::endl;
+//    std::cout << "   rmm = " << R(1, 1) << std::endl;
 
-    R /= denominator;
+    auto trickyDiv = [](auto M, const auto div)
+    {
+//      for(auto m : M.reshaped())
+//      {
+//        std::cout << "M = " << M << " div = " << div << std::endl;
+          double max = std::max( std::abs(div.real()), std::abs(div.imag()) );
+//          std::cout << "max = " << max << std::endl;
+          auto divnorm = div / max;
+//          std::cout << "divn = " << divnorm << std::endl;
+          auto r = M/max;
+//          std::cout << "r1 = " << r << std::endl;
+          r /= divnorm;
+          return r;
+//      }
 
-//    std::cout << "R = " << R << std::endl;
+    };
+//R.re
+//    R /= denominator;
+//    trickyDiv(R, denominator);
+    R(0, 0) = trickyDiv(R(0, 0), denominator);
+    R(0, 1) = trickyDiv(R(0, 1), denominator);
+    R(1, 0) = trickyDiv(R(1, 0), denominator);
+    R(1, 1) = trickyDiv(R(1, 1), denominator);
+
+//    std::cout << "   R = " << R << std::endl;
 
 //    std::cout << "pol = " << polarization << std::endl;
 //    std::cout << "analyzer = " << analyzer << std::endl;
 
     const complex_t result = (polarization * R.adjoint() * analyzer * R).trace();
-//    std::cout << "ret = " << std::abs(result) << std::endl;
+//    std::cout << " R = " << std::abs(result) << std::endl;
     return std::abs(result);
 }

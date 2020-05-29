@@ -358,8 +358,8 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
 //        result[i].ML = result[i].MiL * result[i+1].ML + result[i].MiS * result[i+1].ML + result[i].MiL * result[i+1].MM;
 //        result[i].MM = result[i].MiS * result[i+1].MM + result[i].MiL * result[i+1].MS;
         result[i].ML = Eigen::Matrix4cd::Zero();
-        result[i].MM = result[i].MiL * result[i+1].ML + result[i].MiS * result[i+1].ML + result[i].MiL * result[i+1].MM;
-        result[i].MM += result[i].MiS * result[i+1].MM + result[i].MiL * result[i+1].MS;
+//        result[i].MM = result[i].MiS * result[i+1].ML + result[i].MiL * result[i+1].MM;
+        result[i].MM = result[i].MiL * result[i+1].MM + result[i].MiS * result[i+1].MM + result[i].MiL * result[i+1].MS;
         result[i].MS = result[i].MiS * result[i+1].MS;
     }
 
