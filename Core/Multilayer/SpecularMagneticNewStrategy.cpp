@@ -274,10 +274,11 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
         auto mm = Eigen::Matrix2cd::Identity() - mproduct;
 //        auto pm1 = ;
         auto deltaTemp = computeDelta(result[i], slices[i].thickness(), 1.);
-        auto deltaInvTemp = computeDelta(result[i], slices[i].thickness(), -1.);
+        auto deltaInv = computeDelta(result[i], slices[i].thickness(), -1.);
 
-        auto delta = Eigen::Matrix2cd( std::get<0>(deltaTemp) + std::get<1>(deltaTemp) );
-        auto deltaInv = Eigen::Matrix2cd( std::get<0>(deltaInvTemp) + std::get<1>(deltaInvTemp) );
+        auto delta = std::get<0>(deltaTemp) + std::get<1>(deltaTemp);
+//        auto delta = Eigen::Matrix2cd( std::get<0>(deltaTemp) + std::get<1>(deltaTemp) );
+//        auto deltaInv = Eigen::Matrix2cd( std::get<0>(deltaInvTemp) + std::get<1>(deltaInvTemp) );
 
 //        auto delta    = computeDelta(result[i], slices[i].thickness(), 1.);
 //        auto deltaInv = computeDelta(result[i], slices[i].thickness(), -1.);
@@ -298,12 +299,17 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
 //        std::cout << "det(delta^*) = " << detDeltaInv << std::endl;
 
 
-        result[i].Mi = Eigen::Matrix4cd::Zero();
-        result[i].Mi.block<2,2>(0, 0) = deltaInv * mp;
-        result[i].Mi.block<2,2>(0, 2) = deltaInv * mm;
-        result[i].Mi.block<2,2>(2, 0) = delta * mm;
-        result[i].Mi.block<2,2>(2, 2) = delta * mp;
+        result[i].MiL = Eigen::Matrix4cd::Zero();
+        result[i].MiL.block<2,2>(0, 0) = std::get<0>(deltaInv) * mp;
+        result[i].MiL.block<2,2>(0, 2) = std::get<0>(deltaInv) * mm;
+//        result[i].MiL.block<2,2>(2, 0) = delta * mm;
+//        result[i].MiL.block<2,2>(2, 2) = delta * mp;
 
+        result[i].MiS = Eigen::Matrix4cd::Zero();
+        result[i].MiS.block<2,2>(0, 0) = std::get<1>(deltaInv) * mp;
+        result[i].MiS.block<2,2>(0, 2) = std::get<1>(deltaInv) * mm;
+        result[i].MiS.block<2,2>(2, 0) = delta * mm;
+        result[i].MiS.block<2,2>(2, 2) = delta * mp;
 
 //        result[i].Mi.block<2,2>(0, 0) = mp;
 //        result[i].Mi.block<2,2>(0, 2) = mm;
@@ -311,16 +317,17 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
 //        result[i].Mi.block<2,2>(2, 2) = mp;
 
 
-        result[i].Mi /= 0.5;
+        result[i].MiL /= 0.5;
+        result[i].MiS /= 0.5;
 //        result[i].Mi /= detExact;
 
-        std::cout << "Mi = " << result[i].Mi << std::endl;
+        std::cout << "Mi = " << (result[i].MiS + result[i].MiL) << std::endl;
 //        std::cout << "det(Mi) = " << result[i].Mi(0, 1) * result[i].Mi(1, 0) - result[i].Mi(1, 1) * result[i].Mi(0, 0) << std::endl;
 
 
         std::cout << "==============================================" << std::endl;
         std::cout << std::setprecision(16) << "pm-1 pm+1 = " << mproduct << std::endl;
-        std::cout << std::setprecision(16) << "delta* = " << deltaInv << std::endl;
+//        std::cout << std::setprecision(16) << "delta* = " << deltaInv << std::endl;
         std::cout << std::setprecision(16) << "delta  = " << delta << std::endl;
         std::cout << "==============================================" << std::endl;
 
@@ -333,16 +340,27 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
     // calculate the total tranfer matrix M
 
     if(slices.size() == 2)
-        result[0].M = result[0].Mi;
-
+    {
+        result[0].ML = Eigen::Matrix4cd::Zero();
+        result[0].MM = result[0].MiL;
+        result[0].MS = result[0].MiS;
+    }
     else
-        result[slices.size()-2].M = result[slices.size()-2].Mi;
-
+    {
+        result[slices.size()-2].ML = Eigen::Matrix4cd::Zero();
+        result[slices.size()-2].MM = result[slices.size()-2].MiL;
+        result[slices.size()-2].MS = result[slices.size()-2].MiS;
+                ;
+    }
     for (int i = slices.size() - 3; i >= 0; --i)
-        result[i].M = result[i].Mi * result[i+1].M;
+    {
+        result[i].ML = result[i].MiL * result[i+1].ML + result[i].MiS * result[i+1].ML + result[i].MiL * result[i+1].MM;
+        result[i].MM = result[i].MiS * result[i+1].MM + result[i].MiL * result[i+1].MS;
+        result[i].MS = result[i].MiS * result[i+1].MS;
+    }
 
 
-    std::cout << "M = " << result.front().M << std::endl;
+    std::cout << "M = " << result.front().getM() << std::endl;
 
     // extract R
 
