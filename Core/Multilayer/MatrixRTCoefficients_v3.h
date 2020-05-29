@@ -47,8 +47,8 @@ public:
     //! Returns z-part of the two wavevector eigenmodes
     Eigen::Vector2cd getKz() const override;
 
-    Eigen::Matrix4cd getM() const override {return ML + MM + MS;}
-    Eigen::Matrix4cd getML() const override {return ML;}
+    Eigen::Matrix4cd getM() const override {return MM + MS;}
+//    Eigen::Matrix4cd getML() const override {return ML;}
     Eigen::Matrix4cd getMM() const override {return MM;}
     Eigen::Matrix4cd getMS() const override {return MS;}
 
@@ -73,7 +73,7 @@ private:
     Eigen::Matrix4cd MiL;
     Eigen::Matrix4cd MiS;
 
-    Eigen::Matrix4cd ML;
+//    Eigen::Matrix4cd ML;
     Eigen::Matrix4cd MM;
     Eigen::Matrix4cd MS;
 };
