@@ -321,7 +321,8 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
         result[i].MiS /= 0.5;
 //        result[i].Mi /= detExact;
 
-        std::cout << "Mi = " << (result[i].MiS + result[i].MiL) << std::endl;
+        std::cout << "MiL = " << result[i].MiL << std::endl;
+        std::cout << "MiS = " << result[i].MiS << std::endl;
 //        std::cout << "det(Mi) = " << result[i].Mi(0, 1) * result[i].Mi(1, 0) - result[i].Mi(1, 1) * result[i].Mi(0, 0) << std::endl;
 
 
@@ -354,13 +355,18 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
     }
     for (int i = slices.size() - 3; i >= 0; --i)
     {
-        result[i].ML = result[i].MiL * result[i+1].ML + result[i].MiS * result[i+1].ML + result[i].MiL * result[i+1].MM;
-        result[i].MM = result[i].MiS * result[i+1].MM + result[i].MiL * result[i+1].MS;
+//        result[i].ML = result[i].MiL * result[i+1].ML + result[i].MiS * result[i+1].ML + result[i].MiL * result[i+1].MM;
+//        result[i].MM = result[i].MiS * result[i+1].MM + result[i].MiL * result[i+1].MS;
+        result[i].ML = Eigen::Matrix4cd::Zero();
+        result[i].MM = result[i].MiL * result[i+1].ML + result[i].MiS * result[i+1].ML + result[i].MiL * result[i+1].MM;
+        result[i].MM += result[i].MiS * result[i+1].MM + result[i].MiL * result[i+1].MS;
         result[i].MS = result[i].MiS * result[i+1].MS;
     }
 
 
-    std::cout << "M = " << result.front().getM() << std::endl;
+    std::cout << "ML = " << result.front().getML() << std::endl;
+    std::cout << "MM = " << result.front().getMM() << std::endl;
+    std::cout << "MS = " << result.front().getMS() << std::endl;
 
     // extract R
 
