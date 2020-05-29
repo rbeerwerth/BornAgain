@@ -106,8 +106,9 @@ Eigen::Matrix2cd SpecularMagneticNewStrategy::computeDelta(MatrixRTCoefficients_
     auto Lp = I * 0.5 * thickness * (coeff.m_lambda(0) + coeff.m_lambda(1));
     auto Lm = I * 0.5 * thickness * (coeff.m_lambda(0) - coeff.m_lambda(1));
 
-    auto scaling1 = std::max( {std::exp(Lp), std::exp(-1. * Lp)}, cmpfct );
+//    auto scaling1 = std::max( {std::exp(Lp), std::exp(-1. * Lp)}, cmpfct );
 //    auto scaling2 = std::max( {std::exp(Lm), std::exp(-1. * Lm)}, cmpfct );
+    auto scaling1 = 1.;
     auto scaling2 = 1.;
 
     Lp *= prefactor;
@@ -155,17 +156,44 @@ Eigen::Matrix2cd SpecularMagneticNewStrategy::computeDelta(MatrixRTCoefficients_
     else
         throw std::runtime_error("Broken magnetic field vector");
 
-//    std::cout << "Q = " << Q << std::endl;
-//    std::cout << "exp1 = " << exp1 << std::endl;
-//    std::cout << "exp2 = " << exp2 << std::endl;
-//    std::cout << "delta = " << result << std::endl;
+    std::cout << "Q = " << Q << std::endl;
+    std::cout << "exp1 = " << exp1 << std::endl;
+    std::cout << "exp2 = " << exp2 << std::endl;
+    std::cout << "delta = " << result << std::endl;
 
     auto det = std::exp(Lp) * std::exp(Lp) * std::exp(Lm) * std::exp(-Lm);
     auto det2 = result(0, 0) * result(1, 1) - result(0, 1) * result(1, 0);
 
-//    std::cout << "det1(Delta) = " << det << std::endl;
-//    std::cout << "det2(Delta) = " << det2 << std::endl;
 
+
+    // separate matrix into medium and small part
+    auto exp2Large = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({std::exp(Lm), complex_t(0., 0.)}) );
+    auto exp2Small = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({complex_t(0., 0.), std::exp(-Lm)}) );
+    if(std::norm(std::exp(-Lm)) > std::norm(std::exp(Lm)) )
+        std::swap(exp2Large, exp2Small);
+
+//    result = Q * exp2 * Q.adjoint();
+
+    auto deltaSmall = exp1 * Q * exp2Small * Q.adjoint();
+    auto deltaLarge = exp1 * Q * exp2Large * Q.adjoint();
+
+    std::cout << "result = " << result << std::endl;
+    std::cout << "deltaS = " << deltaSmall << std::endl;
+    std::cout << "deltaL = " << deltaLarge << std::endl;
+    std::cout << "deltaS + deltaL" << deltaSmall + deltaLarge << std::endl;
+
+    auto && fancyDet = [](const Eigen::Matrix2cd matL, const Eigen::Matrix2cd matS){
+        auto det = matL(0, 0) * matL(1, 1) - matL(0, 1) * matL(1, 0) + \
+                matL(0, 0) * matS(1, 1) + matL(1, 1) * matS(0, 0) - matL(0, 1) * matS(1, 0) - matL(1, 0) * matS(0, 1) + \
+                matS(0, 0) * matS(1, 1) - matS(0, 1) * matS(1, 0);
+        return det;
+    };
+
+    auto separatedDet = fancyDet(deltaLarge, deltaSmall);
+
+    std::cout << "det1(Delta) = " << det << std::endl;
+    std::cout << "det2(Delta) = " << det2 << std::endl;
+    std::cout << "fancydet(Delta) = " << separatedDet << std::endl;
 
     return result;
     // lazy way
@@ -221,7 +249,7 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
     // calculate the matrices M_i
     for (size_t i = 0, interfaces = slices.size() - 1; i < interfaces; ++i) {
 
-//        std::cout << "===================================================================================================\ni = "<< i << std::endl;
+        std::cout << "===================================================================================================\ni = "<< i << std::endl;
 
 //        std::cout << "lp = " << result[i].m_lambda(0) << " lm = " << result[i].m_lambda(1) << std::endl;
 //        std::cout << "Lp = " << result[i].m_lambda(0) + result[i].m_lambda(1) << " Lm = " << result[i].m_lambda(0) - result[i].m_lambda(1) << std::endl;
@@ -271,11 +299,11 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
 //        std::cout << "det(Mi) = " << result[i].Mi(0, 1) * result[i].Mi(1, 0) - result[i].Mi(1, 1) * result[i].Mi(0, 0) << std::endl;
 
 
-//        std::cout << "==============================================" << std::endl;
-//        std::cout << std::setprecision(16) << "pm-1 pm+1 = " << mproduct << std::endl;
-//        std::cout << std::setprecision(16) << "delta* = " << deltaInv << std::endl;
-//        std::cout << std::setprecision(16) << "delta  = " << delta << std::endl;
-//        std::cout << "==============================================" << std::endl;
+        std::cout << "==============================================" << std::endl;
+        std::cout << std::setprecision(16) << "pm-1 pm+1 = " << mproduct << std::endl;
+        std::cout << std::setprecision(16) << "delta* = " << deltaInv << std::endl;
+        std::cout << std::setprecision(16) << "delta  = " << delta << std::endl;
+        std::cout << "==============================================" << std::endl;
 
 
 
