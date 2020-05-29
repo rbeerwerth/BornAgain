@@ -80,18 +80,47 @@ double SpecularMatrixTerm::intensity(const SpecularSimulationElement& elem,
 
 //    std::cout << "M = " << M << std::endl;
 
-    auto denominator = M(0,1) * M(1, 0) - M(0, 0) * M(1, 1);
+    auto && precFunc = [](const auto ML, const auto MM, const auto MS,
+                                auto i0, auto i1, auto j0, auto j1, auto k0, auto k1, auto l0, auto l1)
+    {
+        auto result = ML(i0, i1) * ML(j0, j1) - ML(k0, k1) * ML(l0, l1);
+        result += ML(i0, i1) * MM(j0, j1) + MM(i0, i1) * ML(j0, j1) + MM(i0, i1) * MM(j0, j1);
+        result -= (ML(k0, k1) * MM(l0, l1) + MM(k0, k1) * ML(l0, l1) + MM(k0, k1) * MM(l0, l1));
+        result += ML(i0, i1) * MS(j0, j1) + MS(i0, i1) * ML(j0, j1);
+        result -= ( ML(k0, k1) * MS(l0, l1) + MS(k0, k1) * ML(l0, l1) );
+        result += MM(i0, i1) * MS(j0, j1) + MS(i0, i1) * MM(j0, j1);
+        result -= ( MM(k0, k1) * MS(l0, l1) + MS(k0, k1) * MM(l0, l1) );
+        result += MS(i0, i1) * MS(j0, j1) - (MS(k0, k1) * MS(l0, l1));
 
-    std::cout << "denom = " << denominator << std::endl;
+        return result;
+    };
+
+    auto denominator2 = M(0,1) * M(1, 0) - M(0, 0) * M(1, 1);
+
+    auto denominator = precFunc(coeff->getML(), coeff->getMM(), coeff->getMS(),
+                                            0, 1,   1, 0,   0, 0,   1, 1);
+
+    std::cout << "denom  = " << denominator << std::endl;
+    std::cout << "denom2 = " << denominator2 << std::endl;
 
     std::cout << "  rpp = " << M(2, 1) * M(1, 0) - M(2, 0) * M(1, 1) << std::endl;
     std::cout << "  rmm = " << M(3, 0) * M(0, 1) - M(3, 1) * M(0, 0) << std::endl;
 
     Eigen::Matrix2cd R;
-    R(0, 0) = M(2, 1) * M(1, 0) - M(2, 0) * M(1, 1);
-    R(0, 1) = M(2, 0) * M(0, 1) - M(0, 0) * M(2, 1);
-    R(1, 1) = M(3, 0) * M(0, 1) - M(3, 1) * M(0, 0);
-    R(1, 0) = M(3, 1) * M(1, 0) - M(3, 0) * M(1, 1);
+//    R(0, 0) = M(2, 1) * M(1, 0) - M(2, 0) * M(1, 1);
+    R(0, 0) = precFunc(coeff->getML(), coeff->getMM(), coeff->getMS(),
+                       2, 1,   1, 0,   2, 0,   1, 1);
+//    R(0, 1) = M(2, 0) * M(0, 1) - M(0, 0) * M(2, 1);
+    R(0, 1) = precFunc(coeff->getML(), coeff->getMM(), coeff->getMS(),
+                        2, 0,   0, 1,   0, 0,   2, 1);
+//    R(1, 1) = M(3, 0) * M(0, 1) - M(3, 1) * M(0, 0);
+    R(1, 1) = precFunc(coeff->getML(), coeff->getMM(), coeff->getMS(),
+                       3, 0,   0, 1,   3, 1,   0, 0);
+//    R(1, 0) = M(3, 1) * M(1, 0) - M(3, 0) * M(1, 1);
+    R(1, 0) = precFunc(coeff->getML(), coeff->getMM(), coeff->getMS(),
+                       3, 1,   1, 0,   3, 0,   1, 1);
+
+    std::cout << "  rpp2 = " << R(0, 0) << std::endl;
 
     R /= denominator;
 

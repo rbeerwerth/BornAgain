@@ -47,7 +47,10 @@ public:
     //! Returns z-part of the two wavevector eigenmodes
     Eigen::Vector2cd getKz() const override;
 
-    Eigen::Matrix4cd getM() const override {return M;}
+    Eigen::Matrix4cd getM() const override {return ML + MM + MS;}
+    Eigen::Matrix4cd getML() const override {return ML;}
+    Eigen::Matrix4cd getMM() const override {return MM;}
+    Eigen::Matrix4cd getMS() const override {return MS;}
 
 private:
     double m_kz_sign; //! wave propagation direction (-1 for direct one, 1 for time reverse)
@@ -67,8 +70,12 @@ private:
     Eigen::Matrix4cd R2; //!< matrix selecting the reflected part of
                          //!< the second eigenmode
                          //!
-    Eigen::Matrix4cd Mi;
-    Eigen::Matrix4cd M;
+    Eigen::Matrix4cd MiL;
+    Eigen::Matrix4cd MiS;
+
+    Eigen::Matrix4cd ML;
+    Eigen::Matrix4cd MM;
+    Eigen::Matrix4cd MS;
 };
 
 #endif // MATRIXRTCOEFFICIENTS_V2_H

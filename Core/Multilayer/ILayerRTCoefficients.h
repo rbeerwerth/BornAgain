@@ -66,6 +66,21 @@ public:
     {
         throw Exceptions::NotImplementedException("Only defined for Matrix coefficeints");
     }
+
+    virtual Eigen::Matrix4cd getML() const
+    {
+        throw Exceptions::NotImplementedException("Only defined for Matrix coefficeints");
+    }
+
+    virtual Eigen::Matrix4cd getMM() const
+    {
+        throw Exceptions::NotImplementedException("Only defined for Matrix coefficeints");
+    }
+
+    virtual Eigen::Matrix4cd getMS() const
+    {
+        throw Exceptions::NotImplementedException("Only defined for Matrix coefficeints");
+    }
 };
 
 #endif // ILAYERRTCOEFFICIENTS_H
