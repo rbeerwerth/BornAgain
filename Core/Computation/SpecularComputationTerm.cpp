@@ -76,7 +76,7 @@ double SpecularMatrixTerm::intensity(const SpecularSimulationElement& elem,
     const auto& analyzer = elem.polarizationHandler().getAnalyzerOperator();
 
     // construct the reflection operator
-    auto M = coeff->getM();
+//    auto M = coeff->getM();
 
 //    std::cout << "M = " << M << std::endl;
 
@@ -84,7 +84,6 @@ double SpecularMatrixTerm::intensity(const SpecularSimulationElement& elem,
 //                                auto i0, auto i1, auto j0, auto j1, auto k0, auto k1, auto l0, auto l1)
     auto && precFunc = [](const auto MM, const auto MS,
                                 auto i0, auto i1, auto j0, auto j1, auto k0, auto k1, auto l0, auto l1)
-
     {
 //        auto result = ML(i0, i1) * ML(j0, j1) - ML(k0, k1) * ML(l0, l1);
 //        result += ML(i0, i1) * MM(j0, j1) + MM(i0, i1) * ML(j0, j1) + MM(i0, i1) * MM(j0, j1);
