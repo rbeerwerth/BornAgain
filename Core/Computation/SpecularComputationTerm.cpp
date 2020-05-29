@@ -80,8 +80,11 @@ double SpecularMatrixTerm::intensity(const SpecularSimulationElement& elem,
 
 //    std::cout << "M = " << M << std::endl;
 
-    auto && precFunc = [](const auto ML, const auto MM, const auto MS,
+//    auto && precFunc = [](const auto ML, const auto MM, const auto MS,
+//                                auto i0, auto i1, auto j0, auto j1, auto k0, auto k1, auto l0, auto l1)
+    auto && precFunc = [](const auto MM, const auto MS,
                                 auto i0, auto i1, auto j0, auto j1, auto k0, auto k1, auto l0, auto l1)
+
     {
 //        auto result = ML(i0, i1) * ML(j0, j1) - ML(k0, k1) * ML(l0, l1);
 //        result += ML(i0, i1) * MM(j0, j1) + MM(i0, i1) * ML(j0, j1) + MM(i0, i1) * MM(j0, j1);
@@ -107,7 +110,7 @@ double SpecularMatrixTerm::intensity(const SpecularSimulationElement& elem,
     };
 
 
-    auto denominator = precFunc(coeff->getML(), coeff->getMM(), coeff->getMS(),
+    auto denominator = precFunc(coeff->getMM(), coeff->getMS(),
                                             0, 1,   1, 0,   0, 0,   1, 1);
 
 //    std::cout << "denom2 = " << denominator2 << std::endl;
@@ -116,13 +119,13 @@ double SpecularMatrixTerm::intensity(const SpecularSimulationElement& elem,
 //    std::cout << "  rmm = " << M(3, 0) * M(0, 1) - M(3, 1) * M(0, 0) << std::endl;
 
     Eigen::Matrix2cd R;
-    R(0, 0) = precFunc(coeff->getML(), coeff->getMM(), coeff->getMS(),
+    R(0, 0) = precFunc(coeff->getMM(), coeff->getMS(),
                        2, 1,   1, 0,   2, 0,   1, 1);
-    R(0, 1) = precFunc(coeff->getML(), coeff->getMM(), coeff->getMS(),
+    R(0, 1) = precFunc(coeff->getMM(), coeff->getMS(),
                         2, 0,   0, 1,   0, 0,   2, 1);
-    R(1, 1) = precFunc(coeff->getML(), coeff->getMM(), coeff->getMS(),
+    R(1, 1) = precFunc(coeff->getMM(), coeff->getMS(),
                        3, 0,   0, 1,   3, 1,   0, 0);
-    R(1, 0) = precFunc(coeff->getML(), coeff->getMM(), coeff->getMS(),
+    R(1, 0) = precFunc(coeff->getMM(), coeff->getMS(),
                        3, 1,   1, 0,   3, 0,   1, 1);
 
 //    auto denominator = M(0,1) * M(1, 0) - M(0, 0) * M(1, 1);
