@@ -159,10 +159,10 @@ std::pair<Eigen::Matrix2cd, Eigen::Matrix2cd> SpecularMagneticNewStrategy::compu
     else
         throw std::runtime_error("Broken magnetic field vector");
 
-    std::cout << "Q = " << Q << std::endl;
-    std::cout << "exp1 = " << exp1 << std::endl;
-    std::cout << "exp2 = " << exp2 << std::endl;
-    std::cout << "delta = " << result << std::endl;
+//    std::cout << "Q = " << Q << std::endl;
+//    std::cout << "exp1 = " << exp1 << std::endl;
+//    std::cout << "exp2 = " << exp2 << std::endl;
+//    std::cout << "delta = " << result << std::endl;
 
     auto det = std::exp(Lp) * std::exp(Lp) * std::exp(Lm) * std::exp(-Lm);
     auto det2 = result(0, 0) * result(1, 1) - result(0, 1) * result(1, 0);
@@ -182,14 +182,14 @@ std::pair<Eigen::Matrix2cd, Eigen::Matrix2cd> SpecularMagneticNewStrategy::compu
         deltaLarge = exp1 * Q * exp2Large * Q.adjoint();
     }else if(b.mag() == 0.)
     {
-        deltaSmall = exp1 * exp2Small;
-        deltaLarge = exp1 * exp2Large;
+        deltaSmall = exp1 * (exp2Small + exp2Large);
+        deltaLarge = Eigen::Matrix2cd::Zero() ;//exp1 * exp2Large;
     }
 
-    std::cout << "result = " << result << std::endl;
-    std::cout << "deltaS = " << deltaSmall << std::endl;
-    std::cout << "deltaL = " << deltaLarge << std::endl;
-    std::cout << "deltaS + deltaL" << deltaSmall + deltaLarge << std::endl;
+//    std::cout << "result = " << result << std::endl;
+//    std::cout << "deltaS = " << deltaSmall << std::endl;
+//    std::cout << "deltaL = " << deltaLarge << std::endl;
+//    std::cout << "deltaS + deltaL" << deltaSmall + deltaLarge << std::endl;
 
     auto && fancyDet = [](const Eigen::Matrix2cd matL, const Eigen::Matrix2cd matS){
         auto det = matL(0, 0) * matL(1, 1) - matL(0, 1) * matL(1, 0) + \
@@ -200,9 +200,9 @@ std::pair<Eigen::Matrix2cd, Eigen::Matrix2cd> SpecularMagneticNewStrategy::compu
 
     auto separatedDet = fancyDet(deltaLarge, deltaSmall);
 
-    std::cout << "det1(Delta) = " << det << std::endl;
-    std::cout << "det2(Delta) = " << det2 << std::endl;
-    std::cout << "fancydet(Delta) = " << separatedDet << std::endl;
+//    std::cout << "det1(Delta) = " << det << std::endl;
+//    std::cout << "det2(Delta) = " << det2 << std::endl;
+//    std::cout << "fancydet(Delta) = " << separatedDet << std::endl;
 
 //    return result;
     return std::make_pair(deltaLarge, deltaSmall);
@@ -260,7 +260,7 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
     // calculate the matrices M_i
     for (size_t i = 0, interfaces = slices.size() - 1; i < interfaces; ++i) {
 
-        std::cout << "===================================================================================================\ni = "<< i << std::endl;
+//        std::cout << "===================================================================================================\ni = "<< i << std::endl;
 
 //        std::cout << "lp = " << result[i].m_lambda(0) << " lm = " << result[i].m_lambda(1) << std::endl;
 //        std::cout << "Lp = " << result[i].m_lambda(0) + result[i].m_lambda(1) << " Lm = " << result[i].m_lambda(0) - result[i].m_lambda(1) << std::endl;
@@ -321,16 +321,16 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
         result[i].MiS /= 0.5;
 //        result[i].Mi /= detExact;
 
-        std::cout << "MiL = " << result[i].MiL << std::endl;
-        std::cout << "MiS = " << result[i].MiS << std::endl;
+//        std::cout << "MiL = " << result[i].MiL << std::endl;
+//        std::cout << "MiS = " << result[i].MiS << std::endl;
 //        std::cout << "det(Mi) = " << result[i].Mi(0, 1) * result[i].Mi(1, 0) - result[i].Mi(1, 1) * result[i].Mi(0, 0) << std::endl;
 
 
-        std::cout << "==============================================" << std::endl;
-        std::cout << std::setprecision(16) << "pm-1 pm+1 = " << mproduct << std::endl;
+//        std::cout << "==============================================" << std::endl;
+//        std::cout << std::setprecision(16) << "pm-1 pm+1 = " << mproduct << std::endl;
 //        std::cout << std::setprecision(16) << "delta* = " << deltaInv << std::endl;
-        std::cout << std::setprecision(16) << "delta  = " << delta << std::endl;
-        std::cout << "==============================================" << std::endl;
+//        std::cout << std::setprecision(16) << "delta  = " << delta << std::endl;
+//        std::cout << "==============================================" << std::endl;
 
 
 
@@ -364,9 +364,9 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
     }
 
 
-    std::cout << "ML = " << result.front().getML() << std::endl;
-    std::cout << "MM = " << result.front().getMM() << std::endl;
-    std::cout << "MS = " << result.front().getMS() << std::endl;
+//    std::cout << "ML = " << result.front().getML() << std::endl;
+//    std::cout << "MM = " << result.front().getMM() << std::endl;
+//    std::cout << "MS = " << result.front().getMS() << std::endl;
 
     // extract R
 
