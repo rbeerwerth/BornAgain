@@ -119,7 +119,12 @@ double SpecularMatrixTerm::intensity(const SpecularSimulationElement& elem,
     auto denominator = precFunc(coeff->getMM(), coeff->getMS(),
                                             0, 1,   1, 0,   0, 0,   1, 1);
 
-//    std::cout << "denom2 = " << denominator2 << std::endl;
+//    std::cout << "denom = " << denominator << std::endl;
+
+//    if( std::isinf(denominator.real()) || std::isinf(denominator.imag()) ||
+//            std::isnan(denominator.real()) || std::isinf(denominator.imag()) )
+//        throw std::runtime_error("Pushed this beyond numerical limits");
+
 
 //    std::cout << "  rpp = " << M(2, 1) * M(1, 0) - M(2, 0) * M(1, 1) << std::endl;
 //    std::cout << "  rmm = " << M(3, 0) * M(0, 1) - M(3, 1) * M(0, 0) << std::endl;

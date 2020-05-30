@@ -81,10 +81,15 @@ Eigen::Matrix2cd SpecularMagneticNewStrategy::computeInverseP(MatrixRTCoefficien
     Eigen::Matrix2cd result;
 
     auto b = coeff.m_b;
-
+//    std::cout << " b = " << b << std::endl;
     result << Lp - Lm * b.z(), -Lm * ( b.x() - I * b.y() ),
               -Lm * ( b.x() + I * b.y() ), Lp + Lm * b.z();
     result *= 2./(Lp * Lp - Lm * Lm);
+
+//    std::cout << "lp = " << coeff.m_lambda(0) << " lm = " << coeff.m_lambda(1) << std::endl;
+//    std::cout << "Lp = " << Lp << std::endl;
+//    std::cout << "Lm = " << Lm << std::endl;
+//    std::cout << "Lp^2 - Lm^2 = " << (Lp * Lp - Lm * Lm) << std::endl;
 
     return result;
 }
@@ -228,10 +233,25 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
     std::vector<MatrixRTCoefficients_v3> result;
     result.reserve(slices.size());
 
+    if( std::abs( kzs[0] ) < 10 * std::numeric_limits<double>::epsilon() )
+    {
+        for (size_t i = 0, size = slices.size(); i < size; ++i)
+            result.emplace_back(0., Eigen::Vector2cd{0.0, 0.0}, kvector_t{0.0, 0.0, 0.0}, 0.0);
+
+        result[0].MS.topLeftCorner(2, 2)     = Eigen::Matrix2cd::Identity(2, 2);
+        result[0].MS.topRightCorner(2, 2)    = -Eigen::Matrix2cd::Identity(2, 2);
+        result[0].MS.bottomLeftCorner(2, 2)  = -Eigen::Matrix2cd::Identity(2, 2);
+        result[0].MS.bottomRightCorner(2, 2) = Eigen::Matrix2cd::Identity(2, 2);
+        result[0].MS /= 2.;
+        return result;
+    }
+
+    //TODO: check how to restore sign
     const double kz_sign = kzs.front().real() > 0.0 ? 1.0 : -1.0; // save sign to restore it later
     auto B_0 = slices.front().bField();
     result.emplace_back(kz_sign, eigenvalues(kzs.front(), 0.0), kvector_t{0.0, 0.0, 0.0}, 0.0);
-    for (size_t i = 1, size = slices.size(); i < size; ++i) {
+    for (size_t i = 1, size = slices.size(); i < size; ++i)
+    {
         auto B = slices[i].bField() - B_0;
         auto magnetic_SLD = magneticSLD(B);
         result.emplace_back(kz_sign, checkForUnderflow(eigenvalues(kzs[i], magnetic_SLD)),
