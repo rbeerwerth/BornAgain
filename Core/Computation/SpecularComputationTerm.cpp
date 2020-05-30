@@ -98,12 +98,19 @@ double SpecularMatrixTerm::intensity(const SpecularSimulationElement& elem,
 
         // TODO: test or argue why MM(i0, i1) * MM(j0, j1) - MM(k0, k1) * MM(l0, l1);
         // always vanishes
+        // including it, this becomes unstable
+//        auto result = MM(i0, i1) * MM(j0, j1) - MM(k0, k1) * MM(l0, l1);
+//            result += MM(i0, i1) * MS(j0, j1) + MS(i0, i1) * MM(j0, j1);
+//            result -= (MM(k0, k1) * MS(l0, l1) + MS(k0, k1) * MM(l0, l1));
+//            result += MS(i0, i1) * MS(j0, j1) - MS(k0, k1) * MS(l0, l1);
+
+        auto diff = std::abs((MM(i0, i1) * MM(j0, j1) - MM(k0, k1) * MM(l0, l1))/(MM(k0, k1) * MM(l0, l1)));
+        if ( !std::isnan(diff) && diff > 10 * std::numeric_limits<double>::epsilon() )
+            throw std::runtime_error("Neglected part too large");
 
         auto result = MM(i0, i1) * MS(j0, j1) + MS(i0, i1) * MM(j0, j1);
             result -= (MM(k0, k1) * MS(l0, l1) + MS(k0, k1) * MM(l0, l1));
             result += MS(i0, i1) * MS(j0, j1) - MS(k0, k1) * MS(l0, l1);
-//        auto result = MS(i0, i1) * MS(j0, j1) - MS(k0, k1) * MS(l0, l1);
-
 
         return result;
     };
