@@ -243,6 +243,11 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
         result[0].MS.bottomLeftCorner(2, 2)  = -Eigen::Matrix2cd::Identity(2, 2);
         result[0].MS.bottomRightCorner(2, 2) = Eigen::Matrix2cd::Identity(2, 2);
         result[0].MS /= 2.;
+
+        auto R = result[0].getReflectionMatrix();
+        result[0].m_t_r_plus  << 1., 0., R(0, 0), R(1, 0);
+        result[0].m_t_r_minus << 0., 1., R(0, 1), R(1, 1);
+
         return result;
     }
 
@@ -385,12 +390,16 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
         result[i].MS = result[i].MiS * result[i+1].MS;
     }
 
+    // forward propagation
 
-//    std::cout << "ML = " << result.front().getML() << std::endl;
-//    std::cout << "MM = " << result.front().getMM() << std::endl;
-//    std::cout << "MS = " << result.front().getMS() << std::endl;
 
-    // extract R
+    // boundary condition in first layer
+    auto R = result[0].getReflectionMatrix();
+    result[0].m_t_r_plus  << 1., 0., R(0, 0), R(1, 0);
+    result[0].m_t_r_minus << 0., 1., R(0, 1), R(1, 1);
+
+//    std::cout << "m_t_r_+ = " << result[0].m_t_r_plus << std::endl;
+//    std::cout << "m_t_r_- = " << result[0].m_t_r_minus << std::endl;
 
     return result;
 }

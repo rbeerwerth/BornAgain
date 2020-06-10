@@ -74,11 +74,21 @@ private:
                          //!
                          //!
     // new structures
+    Eigen::Vector4cd m_t_r_plus;
+    Eigen::Vector4cd m_t_r_minus;
+
     Eigen::Matrix4cd MiL;
     Eigen::Matrix4cd MiS;
 
     Eigen::Matrix4cd MM;
     Eigen::Matrix4cd MS;
+
+    // helper functions to compute DWBA compatible amplitudes
+    Eigen::Matrix2cd T1Matrix() const;
+    Eigen::Matrix2cd T2Matrix() const;
+
+    Eigen::Matrix2cd R1Matrix() const;
+    Eigen::Matrix2cd R2Matrix() const;
 };
 
 #endif // MATRIXRTCOEFFICIENTS_V3_H
