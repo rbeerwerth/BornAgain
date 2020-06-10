@@ -76,6 +76,11 @@ public:
     {
         throw Exceptions::NotImplementedException("Only defined for Matrix coefficeints");
     }
+
+    virtual Eigen::Matrix2cd getReflectionMatrix() const
+    {
+        throw Exceptions::NotImplementedException("Only defined for Matrix coefficeints");
+    }
 };
 
 #endif // ILAYERRTCOEFFICIENTS_H

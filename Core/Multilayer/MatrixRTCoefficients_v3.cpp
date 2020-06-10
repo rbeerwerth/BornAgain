@@ -102,6 +102,76 @@ Eigen::Vector2cd MatrixRTCoefficients_v3::getKz() const
     return -I * m_kz_sign * m_lambda;
 }
 
+Eigen::Matrix2cd MatrixRTCoefficients_v3::getReflectionMatrix() const
+{
+    auto && precFunc = [](const auto MM, const auto MS,
+                                auto i0, auto i1, auto j0, auto j1, auto k0, auto k1, auto l0, auto l1)
+    {
+//        auto result = ML(i0, i1) * ML(j0, j1) - ML(k0, k1) * ML(l0, l1);
+//        result += ML(i0, i1) * MM(j0, j1) + MM(i0, i1) * ML(j0, j1) + MM(i0, i1) * MM(j0, j1);
+//        result -= (ML(k0, k1) * MM(l0, l1) + MM(k0, k1) * ML(l0, l1) + MM(k0, k1) * MM(l0, l1));
+//        result += ML(i0, i1) * MS(j0, j1) + MS(i0, i1) * ML(j0, j1);
+//        result -= ( ML(k0, k1) * MS(l0, l1) + MS(k0, k1) * ML(l0, l1) );
+
+//        auto result = MM(i0, i1) * MM(j0, j1) - MM(k0, k1) * MM(l0, l1);
+//            result += MM(i0, i1) * MS(j0, j1) + MS(i0, i1) * MM(j0, j1);
+//            result -= (MM(k0, k1) * MS(l0, l1) + MS(k0, k1) * MM(l0, l1));
+//            result += MS(i0, i1) * MS(j0, j1) - MS(k0, k1) * MS(l0, l1);
+
+        // TODO: test or argue why MM(i0, i1) * MM(j0, j1) - MM(k0, k1) * MM(l0, l1);
+        // always vanishes
+        // including it, this becomes unstable
+//        auto result = MM(i0, i1) * MM(j0, j1) - MM(k0, k1) * MM(l0, l1);
+//            result += MM(i0, i1) * MS(j0, j1) + MS(i0, i1) * MM(j0, j1);
+//            result -= (MM(k0, k1) * MS(l0, l1) + MS(k0, k1) * MM(l0, l1));
+//            result += MS(i0, i1) * MS(j0, j1) - MS(k0, k1) * MS(l0, l1);
+
+        auto diff = std::abs((MM(i0, i1) * MM(j0, j1) - MM(k0, k1) * MM(l0, l1))/(MM(k0, k1) * MM(l0, l1)));
+        if ( !std::isnan(diff) && diff > 10 * std::numeric_limits<double>::epsilon() )
+            throw std::runtime_error("Neglected part too large");
+
+        auto result = MM(i0, i1) * MS(j0, j1) + MS(i0, i1) * MM(j0, j1);
+            result -= (MM(k0, k1) * MS(l0, l1) + MS(k0, k1) * MM(l0, l1));
+            result += MS(i0, i1) * MS(j0, j1) - MS(k0, k1) * MS(l0, l1);
+
+        return result;
+    };
+
+    auto trickyDiv = [](auto M, const auto div)
+    {
+          double max = std::max( std::abs(div.real()), std::abs(div.imag()) );
+          auto divnorm = div / max;
+          auto r = M/max;
+          r /= divnorm;
+          return r;
+    };
+
+    Eigen::Matrix2cd R;
+
+    auto denominator = precFunc(getMM(), getMS(),
+                                            0, 1,   1, 0,   0, 0,   1, 1);
+
+    if( std::isinf(denominator.real()) || std::isinf(denominator.imag()) ||
+            std::isnan(denominator.real()) || std::isinf(denominator.imag()) )
+        throw std::runtime_error("Pushed this beyond numerical limits");
+
+    R(0, 0) = precFunc(getMM(), getMS(),
+                       2, 1,   1, 0,   2, 0,   1, 1);
+    R(0, 1) = precFunc(getMM(), getMS(),
+                        2, 0,   0, 1,   0, 0,   2, 1);
+    R(1, 1) = precFunc(getMM(), getMS(),
+                       3, 0,   0, 1,   3, 1,   0, 0);
+    R(1, 0) = precFunc(getMM(), getMS(),
+                       3, 1,   1, 0,   3, 0,   1, 1);
+
+    R(0, 0) = trickyDiv(R(0, 0), denominator);
+    R(0, 1) = trickyDiv(R(0, 1), denominator);
+    R(1, 0) = trickyDiv(R(1, 0), denominator);
+    R(1, 1) = trickyDiv(R(1, 1), denominator);
+
+    return R;
+}
+
 namespace
 {
 Eigen::Vector2cd waveVector(const Eigen::Matrix4cd& frob_matrix,

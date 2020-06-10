@@ -12,8 +12,8 @@
 //
 // ************************************************************************** //
 
-#ifndef MATRIXRTCOEFFICIENTS_V2_H
-#define MATRIXRTCOEFFICIENTS_V2_H
+#ifndef MATRIXRTCOEFFICIENTS_V3_H
+#define MATRIXRTCOEFFICIENTS_V3_H
 
 #include "ILayerRTCoefficients.h"
 #include "Vectors3D.h"
@@ -52,6 +52,8 @@ public:
     Eigen::Matrix4cd getMM() const override {return MM;}
     Eigen::Matrix4cd getMS() const override {return MS;}
 
+    Eigen::Matrix2cd getReflectionMatrix() const override;
+
 private:
     double m_kz_sign; //! wave propagation direction (-1 for direct one, 1 for time reverse)
     Eigen::Vector2cd m_lambda; //!< eigenvalues for wave propagation
@@ -70,12 +72,13 @@ private:
     Eigen::Matrix4cd R2; //!< matrix selecting the reflected part of
                          //!< the second eigenmode
                          //!
+                         //!
+    // new structures
     Eigen::Matrix4cd MiL;
     Eigen::Matrix4cd MiS;
 
-//    Eigen::Matrix4cd ML;
     Eigen::Matrix4cd MM;
     Eigen::Matrix4cd MS;
 };
 
-#endif // MATRIXRTCOEFFICIENTS_V2_H
+#endif // MATRIXRTCOEFFICIENTS_V3_H
