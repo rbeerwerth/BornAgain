@@ -94,16 +94,9 @@ Eigen::Matrix2cd MatrixRTCoefficients_v3::T2Matrix() const
 
 Eigen::Vector2cd MatrixRTCoefficients_v3::T1plus() const
 {
-//    const Eigen::Vector2cd result = waveVector(T1, m_w_plus);
     auto mat = T1Matrix();
-//    if (m_lambda(0) == 0.0 && result == Eigen::Vector2cd::Zero())
-//        return {0.5, 0.0};
-//    return result;
     auto redvec = Eigen::Vector2cd{ m_t_r_plus(0), m_t_r_plus(1) };
     auto result = mat * redvec;
-//    std::cout << "m_t_r_+ = " << m_t_r_plus << std::endl;
-//    auto result = mat * Eigen::Vector2cd{ m_t_r_plus(0), m_t_r_plus(1) };
-//    std::cout << "T1plus = " << result << std::endl;
     return result;
 }
 
@@ -133,12 +126,9 @@ Eigen::Vector2cd MatrixRTCoefficients_v3::R2plus() const
 
 Eigen::Vector2cd MatrixRTCoefficients_v3::T1min() const
 {
-//    std::cout << "m_t_r_- = " << m_t_r_minus << std::endl;
     auto mat = T1Matrix();
-//    auto result = mat * Eigen::Vector2cd{ m_t_r_minus(0), m_t_r_minus(1) };
     auto redvec = Eigen::Vector2cd{ m_t_r_minus(0), m_t_r_minus(1) };
     auto result = mat * redvec;
-//    std::cout << "T1minus = " << result << std::endl;
     return result;
 }
 

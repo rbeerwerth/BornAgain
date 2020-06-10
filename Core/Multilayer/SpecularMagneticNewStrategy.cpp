@@ -301,9 +301,9 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
         auto mm = Eigen::Matrix2cd::Identity() - mproduct;
 //        auto pm1 = ;
         auto deltaTemp = computeDelta(result[i], slices[i].thickness(), 1.);
+        auto delta = std::get<0>(deltaTemp) + std::get<1>(deltaTemp);
         auto deltaInv = computeDelta(result[i], slices[i].thickness(), -1.);
 
-        auto delta = std::get<0>(deltaTemp) + std::get<1>(deltaTemp);
 //        auto delta = Eigen::Matrix2cd( std::get<0>(deltaTemp) + std::get<1>(deltaTemp) );
 //        auto deltaInv = Eigen::Matrix2cd( std::get<0>(deltaInvTemp) + std::get<1>(deltaInvTemp) );
 
@@ -344,8 +344,8 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
 //        result[i].Mi.block<2,2>(2, 2) = mp;
 
 
-        result[i].MiL /= 0.5;
-        result[i].MiS /= 0.5;
+        result[i].MiL /= 2.;
+        result[i].MiS /= 2.;
 //        result[i].Mi /= detExact;
 
 //        std::cout << "MiL = " << result[i].MiL << std::endl;
@@ -400,6 +400,45 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
 
 //    std::cout << "m_t_r_+ = " << result[0].m_t_r_plus << std::endl;
 //    std::cout << "m_t_r_- = " << result[0].m_t_r_minus << std::endl;
+    // propagate forward
+
+//    std::cout << "Forward propagation" << std::endl;
+
+    for(size_t i = 0, interfaces = slices.size() - 1; i < interfaces; ++i)
+    {
+//        std::cout << "i = " << i << std::endl;
+//        auto mproduct = Eigen::Matrix2cd( computeInverseP(result[i]) * computeP(result[i+1]) );
+        auto PInv = Eigen::Matrix2cd( computeInverseP(result[i+1]) * computeP(result[i]) );
+        auto mp = Eigen::Matrix2cd::Identity() + PInv;
+        auto mm = Eigen::Matrix2cd::Identity() - PInv;
+
+        auto deltaTemp = computeDelta(result[i], slices[i].thickness(), 1.);
+        auto delta = std::get<0>(deltaTemp) + std::get<1>(deltaTemp);
+        auto deltaInv = computeDelta(result[i], slices[i].thickness(), -1.);
+
+
+        Eigen::Matrix4cd MS{Eigen::Matrix4cd::Zero()};
+        Eigen::Matrix4cd ML{Eigen::Matrix4cd::Zero()};
+
+        ML.block<2,2>(0, 2) = std::get<0>(deltaInv) * mm;
+        ML.block<2,2>(2, 2) = std::get<0>(deltaInv) * mp;
+
+        MS.block<2,2>(0, 2) = std::get<1>(deltaInv) * mm;
+        MS.block<2,2>(2, 2) = std::get<1>(deltaInv) * mp;
+        MS.block<2,2>(2, 0) = delta * mm;
+        MS.block<2,2>(0, 0) = delta * mp;
+
+        MS /= 2.;
+        ML /= 2.;
+
+        result[i+1].m_t_r_plus  = ( MS + ML ) * result[i].m_t_r_plus;
+        result[i+1].m_t_r_minus = ( MS + ML ) * result[i].m_t_r_minus;
+
+//        std::cout << "M-1 * M = " << ( ML * result[i].MiL + ML * result[i].MiS + MS * result[i].MiL + MS * result[i].MiS ) << std::endl;
+
+    }
+
+
 
     return result;
 }
@@ -423,6 +462,7 @@ Eigen::Vector2cd checkForUnderflow(const Eigen::Vector2cd& eigenvs)
     return {lambda(eigenvs(0)), lambda(eigenvs(1))};
 }
 
+// TODO: use this one? why used? branch cuts?
 complex_t GetImExponential(complex_t exponent)
 {
     if (exponent.imag() > -std::log(std::numeric_limits<double>::min()))
