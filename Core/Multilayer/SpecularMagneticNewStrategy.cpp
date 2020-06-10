@@ -374,7 +374,6 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
 //        result[slices.size()-2].ML = Eigen::Matrix4cd::Zero();
         result[slices.size()-2].MM = result[slices.size()-2].MiL;
         result[slices.size()-2].MS = result[slices.size()-2].MiS;
-                ;
     }
     for (int i = slices.size() - 3; i >= 0; --i)
     {
