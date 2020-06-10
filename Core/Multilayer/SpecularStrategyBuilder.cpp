@@ -28,8 +28,8 @@ std::unique_ptr<ISpecularStrategy> SpecularStrategyBuilder::build(const MultiLay
         if (MultiLayerUtils::hasRoughness(sample))
             throw std::runtime_error("Magnetic roughness not implemented");
 
-        return std::make_unique<SpecularMagneticNewStrategy>();
-//        return std::make_unique<SpecularMagneticStrategy>();
+//        return std::make_unique<SpecularMagneticNewStrategy>();
+        return std::make_unique<SpecularMagneticStrategy>();
 
     } else {
         if (roughnessModel == RoughnessModel::TANH || roughnessModel == RoughnessModel::DEFAULT) {
