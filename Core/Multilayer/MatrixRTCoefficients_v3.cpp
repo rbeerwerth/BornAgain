@@ -13,6 +13,7 @@
 // ************************************************************************** //
 
 #include "MatrixRTCoefficients_v3.h"
+#include <iostream>
 
 namespace
 {
@@ -37,64 +38,132 @@ MatrixRTCoefficients_v3* MatrixRTCoefficients_v3::clone() const
     return new MatrixRTCoefficients_v3(*this);
 }
 
+Eigen::Matrix2cd MatrixRTCoefficients_v3::T1Matrix() const
+{
+    auto b = m_b;
+
+    Eigen::Matrix2cd result;
+    Eigen::Matrix2cd Q;
+
+    auto factor1 = std::sqrt(2. * ( 1. + b.z()));
+    auto factor2 = std::sqrt(2. * ( 1. - b.z()));
+
+    Q << (1. + b.z()) / factor1, (b.z() - 1.) / factor2,
+            (b.x() + I * b.y()) / factor1, (b.x() + I * b.y()) / factor2;
+
+    auto exp2 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({0., 1.}) );
+
+    if ( std::abs(b.mag() - 1.) < std::numeric_limits<double>::epsilon() * 10.)
+        result = Q * exp2 * Q.adjoint();
+    else if(b.mag() == 0. && m_lambda(0) != 0.)
+        result = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({0., 1.}) );
+    else if( b.mag() == 0. && m_lambda(0) == 0. )
+        result = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({0.5, 0.5}) );
+    else
+        throw std::runtime_error("Broken magnetic field vector");
+
+    return result;
+}
+
+Eigen::Matrix2cd MatrixRTCoefficients_v3::T2Matrix() const
+{
+    auto b = m_b;
+
+    Eigen::Matrix2cd result;
+    Eigen::Matrix2cd Q;
+
+    auto factor1 = std::sqrt(2. * ( 1. + b.z()));
+    auto factor2 = std::sqrt(2. * ( 1. - b.z()));
+
+    Q << (1. + b.z()) / factor1, (b.z() - 1.) / factor2,
+            (b.x() + I * b.y()) / factor1, (b.x() + I * b.y()) / factor2;
+
+    auto exp2 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({1., 0.}) );
+
+    if ( std::abs(b.mag() - 1.) < std::numeric_limits<double>::epsilon() * 10.)
+        result = Q * exp2 * Q.adjoint();
+    else if( b.mag() == 0. && m_lambda(1) != 0. )
+        result = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({1., 0.}) );
+    else if( b.mag() == 0. && m_lambda(1) == 0. )
+        result = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({0.5, 0.5}) );
+    else
+        throw std::runtime_error("Broken magnetic field vector");
+
+    return result;
+}
+
 Eigen::Vector2cd MatrixRTCoefficients_v3::T1plus() const
 {
-    const Eigen::Vector2cd result = waveVector(T1, m_w_plus);
-    if (m_lambda(0) == 0.0 && result == Eigen::Vector2cd::Zero())
-        return {0.5, 0.0};
+//    const Eigen::Vector2cd result = waveVector(T1, m_w_plus);
+    auto mat = T1Matrix();
+//    if (m_lambda(0) == 0.0 && result == Eigen::Vector2cd::Zero())
+//        return {0.5, 0.0};
+//    return result;
+    auto redvec = Eigen::Vector2cd{ m_t_r_plus(0), m_t_r_plus(1) };
+    auto result = mat * redvec;
+//    std::cout << "m_t_r_+ = " << m_t_r_plus << std::endl;
+//    auto result = mat * Eigen::Vector2cd{ m_t_r_plus(0), m_t_r_plus(1) };
+//    std::cout << "T1plus = " << result << std::endl;
     return result;
 }
 
 Eigen::Vector2cd MatrixRTCoefficients_v3::R1plus() const
 {
-    if (m_lambda(0) == 0.0 && waveVector(T1, m_w_plus) == Eigen::Vector2cd::Zero())
-        return {-0.5, 0.0};
-    return waveVector(R1, m_w_plus);
+    auto mat = T1Matrix();
+    auto redvec = Eigen::Vector2cd{ m_t_r_plus(2), m_t_r_plus(3) };
+    auto result = mat * redvec;
+    return result;
 }
 
 Eigen::Vector2cd MatrixRTCoefficients_v3::T2plus() const
 {
-    const Eigen::Vector2cd result = waveVector(T2, m_w_plus);
-    if (m_lambda(1) == 0.0 && result == Eigen::Vector2cd::Zero())
-        return {0.5, 0.0};
+    auto mat = T2Matrix();
+    auto redvec = Eigen::Vector2cd{ m_t_r_plus(0), m_t_r_plus(1) };
+    auto result = mat * redvec;
     return result;
 }
 
 Eigen::Vector2cd MatrixRTCoefficients_v3::R2plus() const
 {
-    if (m_lambda(1) == 0.0 && waveVector(T2, m_w_plus) == Eigen::Vector2cd::Zero())
-        return {-0.5, 0.0};
-    return waveVector(R2, m_w_plus);
+    auto mat = T2Matrix();
+    auto redvec = Eigen::Vector2cd{ m_t_r_plus(2), m_t_r_plus(3) };
+    auto result = mat * redvec;
+    return result;
 }
 
 Eigen::Vector2cd MatrixRTCoefficients_v3::T1min() const
 {
-    const Eigen::Vector2cd result = waveVector(T1, m_w_min);
-    if (m_lambda(0) == 0.0 && result == Eigen::Vector2cd::Zero())
-        return {0.0, 0.5};
+//    std::cout << "m_t_r_- = " << m_t_r_minus << std::endl;
+    auto mat = T1Matrix();
+//    auto result = mat * Eigen::Vector2cd{ m_t_r_minus(0), m_t_r_minus(1) };
+    auto redvec = Eigen::Vector2cd{ m_t_r_minus(0), m_t_r_minus(1) };
+    auto result = mat * redvec;
+//    std::cout << "T1minus = " << result << std::endl;
     return result;
 }
 
 Eigen::Vector2cd MatrixRTCoefficients_v3::R1min() const
 {
-    if (m_lambda(0) == 0.0 && waveVector(T1, m_w_min) == Eigen::Vector2cd::Zero())
-        return {0.0, -0.5};
-    return waveVector(R1, m_w_min);
+    auto mat = T1Matrix();
+    auto redvec = Eigen::Vector2cd{ m_t_r_minus(2), m_t_r_minus(3) };
+    auto result = mat * redvec;
+    return result;
 }
 
 Eigen::Vector2cd MatrixRTCoefficients_v3::T2min() const
 {
-    const Eigen::Vector2cd result = waveVector(T2, m_w_min);
-    if (m_lambda(1) == 0.0 && result == Eigen::Vector2cd::Zero())
-        return {0.0, 0.5};
+    auto mat = T2Matrix();
+    auto redvec = Eigen::Vector2cd{ m_t_r_minus(0), m_t_r_minus(1) };
+    auto result = mat * redvec;
     return result;
 }
 
 Eigen::Vector2cd MatrixRTCoefficients_v3::R2min() const
 {
-    if (m_lambda(1) == 0.0 && waveVector(T2, m_w_min) == Eigen::Vector2cd::Zero())
-        return {0.0, -0.5};
-    return waveVector(R2, m_w_min);
+    auto mat = T2Matrix();
+    auto redvec = Eigen::Vector2cd{ m_t_r_minus(2), m_t_r_minus(3) };
+    auto result = mat * redvec;
+    return result;
 }
 
 Eigen::Vector2cd MatrixRTCoefficients_v3::getKz() const
