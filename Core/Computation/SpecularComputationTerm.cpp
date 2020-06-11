@@ -66,24 +66,6 @@ void SpecularMatrixTerm::eval(SpecularSimulationElement& elem,
                               const std::vector<Slice>& slices) const
 {
     auto coeff = m_Strategy->Execute(slices, elem.produceKz(slices));
-
-    for(size_t i = 0; i < coeff.size(); ++i)
-//    for(size_t i = 0; i < 1; ++i)
-    {
-        auto c = coeff[i].get();
-        std::cout << "========================================\n";
-        std::cout << "i = " << i << "\n";
-        std::cout << "+\n";
-        std::cout << "T1 = " << c->T1plus() << " T2 = " << c->T2plus() << "\n";
-        std::cout << "R1 = " << c->R1plus() << " R2 = " << c->R2plus() << "\n";
-
-        std::cout << "-\n";
-        std::cout << "T1 = " << c->T1min() << " T2 = " << c->T2min() << "\n";
-        std::cout << "R1 = " << c->R1min() << " R2 = " << c->R2min() << std::endl;
-
-
-    }
-
     elem.setIntensity(intensity(elem, coeff.front()));
 }
 
