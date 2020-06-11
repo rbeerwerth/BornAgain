@@ -35,26 +35,24 @@ MatrixRTCoefficients_v3* MatrixRTCoefficients_v3::clone() const
     return new MatrixRTCoefficients_v3(*this);
 }
 
-Eigen::Matrix2cd MatrixRTCoefficients_v3::T1Matrix() const
+Eigen::Matrix2cd MatrixRTCoefficients_v3::TransformationMatrix(complex_t eigenvalue, Eigen::Vector2d selection) const
 {
-    auto b = m_b;
-
     Eigen::Matrix2cd result;
     Eigen::Matrix2cd Q;
 
-    auto factor1 = std::sqrt(2. * ( 1. + b.z()));
-    auto factor2 = std::sqrt(2. * ( 1. - b.z()));
+    auto factor1 = std::sqrt(2. * ( 1. + m_b.z()));
+    auto factor2 = std::sqrt(2. * ( 1. - m_b.z()));
 
-    Q << (1. + b.z()) / factor1, (b.z() - 1.) / factor2,
-            (b.x() + I * b.y()) / factor1, (b.x() + I * b.y()) / factor2;
+    Q << (1. + m_b.z()) / factor1, (m_b.z() - 1.) / factor2,
+            (m_b.x() + I * m_b.y()) / factor1, (m_b.x() + I * m_b.y()) / factor2;
 
-    auto exp2 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({0., 1.}) );
+    auto exp2 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>(selection) );
 
-    if ( std::abs(b.mag() - 1.) < std::numeric_limits<double>::epsilon() * 10.)
+    if ( std::abs(m_b.mag() - 1.) < std::numeric_limits<double>::epsilon() * 10.)
         result = Q * exp2 * Q.adjoint();
-    else if(b.mag() == 0. && m_lambda(1) != 0.)
-        result = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({0., 1.}) );
-    else if( b.mag() == 0. && m_lambda(1) == 0. )
+    else if( m_b.mag() == 0. && eigenvalue != 0. )
+        result = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>(selection) );
+    else if( m_b.mag() == 0. && eigenvalue == 0. )
         result = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({0.5, 0.5}) );
     else
         throw std::runtime_error("Broken magnetic field vector");
@@ -62,31 +60,14 @@ Eigen::Matrix2cd MatrixRTCoefficients_v3::T1Matrix() const
     return result;
 }
 
+Eigen::Matrix2cd MatrixRTCoefficients_v3::T1Matrix() const
+{
+    return TransformationMatrix(m_lambda(1), {0., 1.});
+}
+
 Eigen::Matrix2cd MatrixRTCoefficients_v3::T2Matrix() const
 {
-    auto b = m_b;
-
-    Eigen::Matrix2cd result;
-    Eigen::Matrix2cd Q;
-
-    auto factor1 = std::sqrt(2. * ( 1. + b.z()));
-    auto factor2 = std::sqrt(2. * ( 1. - b.z()));
-
-    Q << (1. + b.z()) / factor1, (b.z() - 1.) / factor2,
-            (b.x() + I * b.y()) / factor1, (b.x() + I * b.y()) / factor2;
-
-    auto exp2 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({1., 0.}) );
-
-    if ( std::abs(b.mag() - 1.) < std::numeric_limits<double>::epsilon() * 10.)
-        result = Q * exp2 * Q.adjoint();
-    else if( b.mag() == 0. && m_lambda(0) != 0. )
-        result = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({1., 0.}) );
-    else if( b.mag() == 0. && m_lambda(0) == 0. )
-        result = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({0.5, 0.5}) );
-    else
-        throw std::runtime_error("Broken magnetic field vector");
-
-    return result;
+    return TransformationMatrix(m_lambda(0), {1., 0.});
 }
 
 Eigen::Vector2cd MatrixRTCoefficients_v3::T1plus() const
@@ -163,7 +144,6 @@ Eigen::Matrix2cd MatrixRTCoefficients_v3::getReflectionMatrix() const
     auto && precFunc = [](const auto & ML, const auto & MS,
                                 auto i0, auto i1, auto j0, auto j1, auto k0, auto k1, auto l0, auto l1)
     {
-
         auto diff = std::abs((ML(i0, i1) * ML(j0, j1) - ML(k0, k1) * ML(l0, l1))/(ML(k0, k1) * ML(l0, l1)));
         if ( !std::isnan(diff) && diff > 10 * std::numeric_limits<double>::epsilon() )
             throw std::runtime_error("Neglected part too large");

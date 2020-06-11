@@ -52,21 +52,22 @@ public:
 private:
     double m_kz_sign; //! wave propagation direction (-1 for direct one, 1 for time reverse)
     Eigen::Vector2cd m_lambda; //!< eigenvalues for wave propagation
-    kvector_t m_b; //!< normalized magnetic field impact (with correction for external mag. field)
+    kvector_t m_b; //!< unit magnetic field vector
     double m_magnetic_SLD;
 
     Eigen::Vector4cd m_t_r_plus;  // amplitudes for incoming up-polarization
     Eigen::Vector4cd m_t_r_minus; // amplitudes for incoming down-polarization
 
     Eigen::Matrix4cd m_MiL; // Large part of the backwards transfer matrix
-                          // between current and next layer
+                            // between current and next layer
     Eigen::Matrix4cd m_MiS; // small part of the backwards transfer matrix
-                          // between current and next layer
+                            // between current and next layer
 
     Eigen::Matrix4cd m_ML; // Large part of the total backwards transfer matrix
     Eigen::Matrix4cd m_MS; // Small part of the total backwards transfer matrix
 
     // helper functions to compute DWBA compatible amplitudes used in the T1plus() etc. functions
+    Eigen::Matrix2cd TransformationMatrix(complex_t eigenvalue, Eigen::Vector2d selection) const;
     Eigen::Matrix2cd T1Matrix() const;
     Eigen::Matrix2cd T2Matrix() const;
 };
