@@ -62,21 +62,6 @@ public:
                                                   "getScalarKz(): coefficients are not scalar.");
     }
 
-    virtual Eigen::Matrix4cd getM() const
-    {
-        throw Exceptions::NotImplementedException("Only defined for Matrix coefficeints");
-    }
-
-    virtual Eigen::Matrix4cd getMM() const
-    {
-        throw Exceptions::NotImplementedException("Only defined for Matrix coefficeints");
-    }
-
-    virtual Eigen::Matrix4cd getMS() const
-    {
-        throw Exceptions::NotImplementedException("Only defined for Matrix coefficeints");
-    }
-
     virtual Eigen::Matrix2cd getReflectionMatrix() const
     {
         throw Exceptions::NotImplementedException("Only defined for Matrix coefficeints");

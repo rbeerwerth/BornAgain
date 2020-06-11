@@ -238,11 +238,11 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
         for (size_t i = 0, size = slices.size(); i < size; ++i)
             result.emplace_back(0., Eigen::Vector2cd{0.0, 0.0}, kvector_t{0.0, 0.0, 0.0}, 0.0);
 
-        result[0].MS.topLeftCorner(2, 2)     = Eigen::Matrix2cd::Identity(2, 2);
-        result[0].MS.topRightCorner(2, 2)    = -Eigen::Matrix2cd::Identity(2, 2);
-        result[0].MS.bottomLeftCorner(2, 2)  = -Eigen::Matrix2cd::Identity(2, 2);
-        result[0].MS.bottomRightCorner(2, 2) = Eigen::Matrix2cd::Identity(2, 2);
-        result[0].MS /= 2.;
+        result[0].m_MS.topLeftCorner(2, 2)     = Eigen::Matrix2cd::Identity(2, 2);
+        result[0].m_MS.topRightCorner(2, 2)    = -Eigen::Matrix2cd::Identity(2, 2);
+        result[0].m_MS.bottomLeftCorner(2, 2)  = -Eigen::Matrix2cd::Identity(2, 2);
+        result[0].m_MS.bottomRightCorner(2, 2) = Eigen::Matrix2cd::Identity(2, 2);
+        result[0].m_MS /= 2.;
 
         auto R = result[0].getReflectionMatrix();
         result[0].m_t_r_plus  << 1., 0., R(0, 0), R(1, 0);
@@ -326,17 +326,17 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
 //        std::cout << "det(delta^*) = " << detDeltaInv << std::endl;
 
 
-        result[i].MiL = Eigen::Matrix4cd::Zero();
-        result[i].MiL.block<2,2>(0, 0) = std::get<0>(deltaInv) * mp;
-        result[i].MiL.block<2,2>(0, 2) = std::get<0>(deltaInv) * mm;
+        result[i].m_MiL = Eigen::Matrix4cd::Zero();
+        result[i].m_MiL.block<2,2>(0, 0) = std::get<0>(deltaInv) * mp;
+        result[i].m_MiL.block<2,2>(0, 2) = std::get<0>(deltaInv) * mm;
 //        result[i].MiL.block<2,2>(2, 0) = delta * mm;
 //        result[i].MiL.block<2,2>(2, 2) = delta * mp;
 
-        result[i].MiS = Eigen::Matrix4cd::Zero();
-        result[i].MiS.block<2,2>(0, 0) = std::get<1>(deltaInv) * mp;
-        result[i].MiS.block<2,2>(0, 2) = std::get<1>(deltaInv) * mm;
-        result[i].MiS.block<2,2>(2, 0) = delta * mm;
-        result[i].MiS.block<2,2>(2, 2) = delta * mp;
+        result[i].m_MiS = Eigen::Matrix4cd::Zero();
+        result[i].m_MiS.block<2,2>(0, 0) = std::get<1>(deltaInv) * mp;
+        result[i].m_MiS.block<2,2>(0, 2) = std::get<1>(deltaInv) * mm;
+        result[i].m_MiS.block<2,2>(2, 0) = delta * mm;
+        result[i].m_MiS.block<2,2>(2, 2) = delta * mp;
 
 //        result[i].Mi.block<2,2>(0, 0) = mp;
 //        result[i].Mi.block<2,2>(0, 2) = mm;
@@ -344,8 +344,8 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
 //        result[i].Mi.block<2,2>(2, 2) = mp;
 
 
-        result[i].MiL /= 2.;
-        result[i].MiS /= 2.;
+        result[i].m_MiL /= 2.;
+        result[i].m_MiS /= 2.;
 //        result[i].Mi /= detExact;
 
 //        std::cout << "MiL = " << result[i].MiL << std::endl;
@@ -371,14 +371,14 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
     if(slices.size() == 2)
     {
 //        result[0].ML = Eigen::Matrix4cd::Zero();
-        result[0].MM = result[0].MiL;
-        result[0].MS = result[0].MiS;
+        result[0].m_ML = result[0].m_MiL;
+        result[0].m_MS = result[0].m_MiS;
     }
     else
     {
 //        result[slices.size()-2].ML = Eigen::Matrix4cd::Zero();
-        result[slices.size()-2].MM = result[slices.size()-2].MiL;
-        result[slices.size()-2].MS = result[slices.size()-2].MiS;
+        result[slices.size()-2].m_ML = result[slices.size()-2].m_MiL;
+        result[slices.size()-2].m_MS = result[slices.size()-2].m_MiS;
     }
 
     for (int i = slices.size() - 3; i >= 0; --i)
@@ -387,8 +387,8 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
 //        result[i].MM = result[i].MiS * result[i+1].MM + result[i].MiL * result[i+1].MS;
 //        result[i].ML = Eigen::Matrix4cd::Zero();
 //        result[i].MM = result[i].MiS * result[i+1].ML + result[i].MiL * result[i+1].MM;
-        result[i].MM = result[i].MiL * result[i+1].MM + result[i].MiS * result[i+1].MM + result[i].MiL * result[i+1].MS;
-        result[i].MS = result[i].MiS * result[i+1].MS;
+        result[i].m_ML = result[i].m_MiL * result[i+1].m_ML + result[i].m_MiS * result[i+1].m_ML + result[i].m_MiL * result[i+1].m_MS;
+        result[i].m_MS = result[i].m_MiS * result[i+1].m_MS;
     }
 
     // forward propagation
