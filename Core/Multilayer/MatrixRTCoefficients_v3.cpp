@@ -27,6 +27,7 @@ MatrixRTCoefficients_v3::MatrixRTCoefficients_v3(double kz_sign, Eigen::Vector2c
                                                  kvector_t b, double magnetic_SLD)
     : m_kz_sign(kz_sign), m_lambda(std::move(eigenvalues)), m_b(std::move(b)), m_magnetic_SLD(magnetic_SLD)
 {
+    std::cout << "MatrixRTCoefficients_v3, eigenvalues = " << m_lambda << " b = " << m_b << std::endl;
 }
 
 MatrixRTCoefficients_v3::MatrixRTCoefficients_v3(const MatrixRTCoefficients_v3& other) = default;
@@ -113,6 +114,9 @@ Eigen::Vector2cd MatrixRTCoefficients_v3::T2plus() const
     auto mat = T2Matrix();
     auto redvec = Eigen::Vector2cd{ m_t_r_plus(0), m_t_r_plus(1) };
     auto result = mat * redvec;
+//    std::cout << "b = " << m_b << " lambda = " << m_lambda(1) << " mat = " << mat  << std::endl;
+    std::cout << "b = " << m_b << " lambda = " << m_lambda(1) << std::endl;
+    std::cout << "T2+ = " << result << std::endl;
     return result;
 }
 

@@ -260,7 +260,7 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
         auto B = slices[i].bField() - B_0;
         auto magnetic_SLD = magneticSLD(B);
         result.emplace_back(kz_sign, checkForUnderflow(eigenvalues(kzs[i], magnetic_SLD)),
-                            B.mag() != 0. ? B/B.mag() : kvector_t{0.0, 0.0, 0.0}, magnetic_SLD);
+                            B.mag() > std::numeric_limits<double>::epsilon() * 10 ? B/B.mag() : kvector_t{0.0, 0.0, 0.0}, magnetic_SLD);
     }
 
 //    auto testindex{1};
@@ -380,6 +380,7 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
         result[slices.size()-2].MM = result[slices.size()-2].MiL;
         result[slices.size()-2].MS = result[slices.size()-2].MiS;
     }
+
     for (int i = slices.size() - 3; i >= 0; --i)
     {
 //        result[i].ML = result[i].MiL * result[i+1].ML + result[i].MiS * result[i+1].ML + result[i].MiL * result[i+1].MM;
