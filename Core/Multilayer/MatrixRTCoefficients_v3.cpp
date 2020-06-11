@@ -27,7 +27,7 @@ MatrixRTCoefficients_v3::MatrixRTCoefficients_v3(double kz_sign, Eigen::Vector2c
                                                  kvector_t b, double magnetic_SLD)
     : m_kz_sign(kz_sign), m_lambda(std::move(eigenvalues)), m_b(std::move(b)), m_magnetic_SLD(magnetic_SLD)
 {
-    std::cout << "MatrixRTCoefficients_v3, eigenvalues = " << m_lambda << " b = " << m_b << std::endl;
+//    std::cout << "MatrixRTCoefficients_v3, eigenvalues = " << m_lambda << " b = " << m_b << std::endl;
 }
 
 MatrixRTCoefficients_v3::MatrixRTCoefficients_v3(const MatrixRTCoefficients_v3& other) = default;
@@ -56,9 +56,9 @@ Eigen::Matrix2cd MatrixRTCoefficients_v3::T1Matrix() const
 
     if ( std::abs(b.mag() - 1.) < std::numeric_limits<double>::epsilon() * 10.)
         result = Q * exp2 * Q.adjoint();
-    else if(b.mag() == 0. && m_lambda(0) != 0.)
+    else if(b.mag() == 0. && m_lambda(1) != 0.)
         result = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({0., 1.}) );
-    else if( b.mag() == 0. && m_lambda(0) == 0. )
+    else if( b.mag() == 0. && m_lambda(1) == 0. )
         result = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({0.5, 0.5}) );
     else
         throw std::runtime_error("Broken magnetic field vector");
@@ -83,9 +83,9 @@ Eigen::Matrix2cd MatrixRTCoefficients_v3::T2Matrix() const
 
     if ( std::abs(b.mag() - 1.) < std::numeric_limits<double>::epsilon() * 10.)
         result = Q * exp2 * Q.adjoint();
-    else if( b.mag() == 0. && m_lambda(1) != 0. )
+    else if( b.mag() == 0. && m_lambda(0) != 0. )
         result = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({1., 0.}) );
-    else if( b.mag() == 0. && m_lambda(1) == 0. )
+    else if( b.mag() == 0. && m_lambda(0) == 0. )
         result = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({0.5, 0.5}) );
     else
         throw std::runtime_error("Broken magnetic field vector");
@@ -115,8 +115,6 @@ Eigen::Vector2cd MatrixRTCoefficients_v3::T2plus() const
     auto redvec = Eigen::Vector2cd{ m_t_r_plus(0), m_t_r_plus(1) };
     auto result = mat * redvec;
 //    std::cout << "b = " << m_b << " lambda = " << m_lambda(1) << " mat = " << mat  << std::endl;
-    std::cout << "b = " << m_b << " lambda = " << m_lambda(1) << std::endl;
-    std::cout << "T2+ = " << result << std::endl;
     return result;
 }
 
@@ -162,7 +160,7 @@ Eigen::Vector2cd MatrixRTCoefficients_v3::R2min() const
 
 Eigen::Vector2cd MatrixRTCoefficients_v3::getKz() const
 {
-    return -I * m_kz_sign * m_lambda;
+    return m_kz_sign * m_lambda;
 }
 
 Eigen::Matrix2cd MatrixRTCoefficients_v3::getReflectionMatrix() const

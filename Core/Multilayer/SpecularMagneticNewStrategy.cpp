@@ -59,8 +59,8 @@ SpecularMagneticNewStrategy::Execute(const std::vector<Slice>& slices,
 
 Eigen::Matrix2cd SpecularMagneticNewStrategy::computeP(MatrixRTCoefficients_v3& coeff)
 {
-    auto Lp = coeff.m_lambda(0) + coeff.m_lambda(1);
-    auto Lm = coeff.m_lambda(0) - coeff.m_lambda(1);
+    auto Lp = coeff.m_lambda(1) + coeff.m_lambda(0);
+    auto Lm = coeff.m_lambda(1) - coeff.m_lambda(0);
 
     Eigen::Matrix2cd result;
 
@@ -75,8 +75,8 @@ Eigen::Matrix2cd SpecularMagneticNewStrategy::computeP(MatrixRTCoefficients_v3& 
 
 Eigen::Matrix2cd SpecularMagneticNewStrategy::computeInverseP(MatrixRTCoefficients_v3& coeff)
 {
-    auto Lp = coeff.m_lambda(0) + coeff.m_lambda(1);
-    auto Lm = coeff.m_lambda(0) - coeff.m_lambda(1);
+    auto Lp = coeff.m_lambda(1) + coeff.m_lambda(0);
+    auto Lm = coeff.m_lambda(1) - coeff.m_lambda(0);
 
     Eigen::Matrix2cd result;
 
@@ -111,8 +111,8 @@ std::pair<Eigen::Matrix2cd, Eigen::Matrix2cd> SpecularMagneticNewStrategy::compu
     Eigen::Matrix2cd result;
     Eigen::Matrix2cd deltaSmall;
     Eigen::Matrix2cd deltaLarge;
-    auto Lp = prefactor * I * 0.5 * thickness * (coeff.m_lambda(0) + coeff.m_lambda(1));
-    auto Lm = prefactor * I * 0.5 * thickness * (coeff.m_lambda(0) - coeff.m_lambda(1));
+    auto Lp = prefactor * I * 0.5 * thickness * (coeff.m_lambda(1) + coeff.m_lambda(0));
+    auto Lm = prefactor * I * 0.5 * thickness * (coeff.m_lambda(1) - coeff.m_lambda(0));
 
 //    auto scaling1 = std::max( {std::exp(Lp), std::exp(-1. * Lp)}, cmpfct );
 //    auto scaling2 = std::max( {std::exp(Lm), std::exp(-1. * Lm)}, cmpfct );
@@ -439,6 +439,22 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
 
     }
 
+    for(size_t i = 0; i < result.size(); ++i)
+    {
+
+        auto c = result[i];
+        std::cout << "========================================\n";
+        std::cout << "i = " << i << "\n";
+        std::cout << "k_z = " << c.getKz() << "\n";
+        std::cout << "+\n";
+        std::cout << "T1 = " << c.T1plus() << " T2 = " << c.T2plus() << "\n";
+        std::cout << "R1 = " << c.R1plus() << " R2 = " << c.R2plus() << "\n";
+
+        std::cout << "-\n";
+        std::cout << "T1 = " << c.T1min() << " T2 = " << c.T2min() << "\n";
+        std::cout << "R1 = " << c.R1min() << " R2 = " << c.R2min() << std::endl;
+    }
+
 
 
     return result;
@@ -454,7 +470,7 @@ double magneticSLD(kvector_t B_field)
 Eigen::Vector2cd eigenvalues(complex_t kz, double magnetic_SLD)
 {
     const complex_t a = kz * kz;
-    return {std::sqrt(a + 4. * M_PI * magnetic_SLD), std::sqrt(a - 4. * M_PI * magnetic_SLD)};
+    return {std::sqrt(a - 4. * M_PI * magnetic_SLD), std::sqrt(a + 4. * M_PI * magnetic_SLD)};
 }
 
 Eigen::Vector2cd checkForUnderflow(const Eigen::Vector2cd& eigenvs)

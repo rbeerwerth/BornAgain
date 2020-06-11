@@ -28,7 +28,7 @@ MatrixRTCoefficients_v2::MatrixRTCoefficients_v2(double kz_sign, Eigen::Vector2c
                                                  kvector_t b)
     : m_kz_sign(kz_sign), m_lambda(std::move(eigenvalues)), m_b(std::move(b))
 {
-    std::cout << "MatrixRTCoefficients_v2, eigenvalues = " << m_lambda << " b = " << m_b << std::endl;
+//    std::cout << "MatrixRTCoefficients_v2, eigenvalues = " << m_lambda << " b = " << m_b << std::endl;
 }
 
 MatrixRTCoefficients_v2::MatrixRTCoefficients_v2(const MatrixRTCoefficients_v2& other) = default;
@@ -62,8 +62,6 @@ Eigen::Vector2cd MatrixRTCoefficients_v2::T2plus() const
     if (m_lambda(1) == 0.0 && result == Eigen::Vector2cd::Zero())
         result = {0.5, 0.0};
 
-    std::cout << "b = " << m_b << " lambda = " << m_lambda(1) << std::endl;
-    std::cout << "T2+ = " << result << std::endl;
     return result;
 }
 
