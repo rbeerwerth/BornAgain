@@ -60,16 +60,16 @@ private:
     kvector_t m_b; //!< normalized magnetic field impact (with correction for external mag. field)
     double m_magnetic_SLD;
 
-    Eigen::Vector4cd m_w_plus; //!< boundary values for up-polarization
-    Eigen::Vector4cd m_w_min;  //!< boundary values for down-polarization
+//    Eigen::Vector4cd m_w_plus; //!< boundary values for up-polarization
+//    Eigen::Vector4cd m_w_min;  //!< boundary values for down-polarization
 
-    Eigen::Matrix4cd T1; //!< matrix selecting the transmitted part of
-                         //!< the first eigenmode
-    Eigen::Matrix4cd R1; //!< matrix selecting the reflected part of
-                         //!< the first eigenmode
-    Eigen::Matrix4cd T2; //!< matrix selecting the transmitted part of
-                         //!< the second eigenmode
-    Eigen::Matrix4cd R2; //!< matrix selecting the reflected part of
+//    Eigen::Matrix4cd T1; //!< matrix selecting the transmitted part of
+//                         !< the first eigenmode
+//    Eigen::Matrix4cd R1; //!< matrix selecting the reflected part of
+//                         !< the first eigenmode
+//    Eigen::Matrix4cd T2; //!< matrix selecting the transmitted part of
+//                         !< the second eigenmode
+//    Eigen::Matrix4cd R2; //!< matrix selecting the reflected part of
                          //!< the second eigenmode
                          //!
                          //!
