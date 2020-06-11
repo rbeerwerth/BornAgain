@@ -14,8 +14,6 @@
 
 #include "MatrixRTCoefficients_v2.h"
 
-#include <iostream>
-
 namespace
 {
 Eigen::Vector2cd waveVector(const Eigen::Matrix4cd& frob_matrix,
@@ -28,7 +26,6 @@ MatrixRTCoefficients_v2::MatrixRTCoefficients_v2(double kz_sign, Eigen::Vector2c
                                                  kvector_t b)
     : m_kz_sign(kz_sign), m_lambda(std::move(eigenvalues)), m_b(std::move(b))
 {
-//    std::cout << "MatrixRTCoefficients_v2, eigenvalues = " << m_lambda << " b = " << m_b << std::endl;
 }
 
 MatrixRTCoefficients_v2::MatrixRTCoefficients_v2(const MatrixRTCoefficients_v2& other) = default;
@@ -42,10 +39,9 @@ MatrixRTCoefficients_v2* MatrixRTCoefficients_v2::clone() const
 
 Eigen::Vector2cd MatrixRTCoefficients_v2::T1plus() const
 {
-    Eigen::Vector2cd result = waveVector(T1, m_w_plus);
+    const Eigen::Vector2cd result = waveVector(T1, m_w_plus);
     if (m_lambda(0) == 0.0 && result == Eigen::Vector2cd::Zero())
-        result << 0.5, 0.0;
-
+        return {0.5, 0.0};
     return result;
 }
 
@@ -58,10 +54,9 @@ Eigen::Vector2cd MatrixRTCoefficients_v2::R1plus() const
 
 Eigen::Vector2cd MatrixRTCoefficients_v2::T2plus() const
 {
-    Eigen::Vector2cd result = waveVector(T2, m_w_plus);
+    const Eigen::Vector2cd result = waveVector(T2, m_w_plus);
     if (m_lambda(1) == 0.0 && result == Eigen::Vector2cd::Zero())
-        result = {0.5, 0.0};
-
+        return {0.5, 0.0};
     return result;
 }
 
@@ -106,16 +101,6 @@ Eigen::Vector2cd MatrixRTCoefficients_v2::getKz() const
 {
     return -I * m_kz_sign * m_lambda;
 }
-
-Eigen::Matrix2cd MatrixRTCoefficients_v2::getReflectionMatrix() const
-{
-    Eigen::Matrix2cd R;
-    R.col(0) = R1plus() + R2plus();
-    R.col(1) = R1min() + R2min();
-
-    return R;
-}
-
 
 namespace
 {
