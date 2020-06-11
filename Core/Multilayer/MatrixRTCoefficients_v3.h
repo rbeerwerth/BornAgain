@@ -47,11 +47,6 @@ public:
     //! Returns z-part of the two wavevector eigenmodes
     Eigen::Vector2cd getKz() const override;
 
-    Eigen::Matrix4cd getM() const override {return MM + MS;}
-//    Eigen::Matrix4cd getML() const override {return ML;}
-    Eigen::Matrix4cd getMM() const override {return MM;}
-    Eigen::Matrix4cd getMS() const override {return MS;}
-
     Eigen::Matrix2cd getReflectionMatrix() const override;
 
 private:
@@ -60,35 +55,20 @@ private:
     kvector_t m_b; //!< normalized magnetic field impact (with correction for external mag. field)
     double m_magnetic_SLD;
 
-//    Eigen::Vector4cd m_w_plus; //!< boundary values for up-polarization
-//    Eigen::Vector4cd m_w_min;  //!< boundary values for down-polarization
+    Eigen::Vector4cd m_t_r_plus;  // amplitudes for incoming up-polarization
+    Eigen::Vector4cd m_t_r_minus; // amplitudes for incoming down-polarization
 
-//    Eigen::Matrix4cd T1; //!< matrix selecting the transmitted part of
-//                         !< the first eigenmode
-//    Eigen::Matrix4cd R1; //!< matrix selecting the reflected part of
-//                         !< the first eigenmode
-//    Eigen::Matrix4cd T2; //!< matrix selecting the transmitted part of
-//                         !< the second eigenmode
-//    Eigen::Matrix4cd R2; //!< matrix selecting the reflected part of
-                         //!< the second eigenmode
-                         //!
-                         //!
-    // new structures
-    Eigen::Vector4cd m_t_r_plus;
-    Eigen::Vector4cd m_t_r_minus;
+    Eigen::Matrix4cd m_MiL; // Large part of the backwards transfer matrix
+                          // between current and next layer
+    Eigen::Matrix4cd m_MiS; // small part of the backwards transfer matrix
+                          // between current and next layer
 
-    Eigen::Matrix4cd MiL;
-    Eigen::Matrix4cd MiS;
+    Eigen::Matrix4cd m_ML; // Large part of the total backwards transfer matrix
+    Eigen::Matrix4cd m_MS; // Small part of the total backwards transfer matrix
 
-    Eigen::Matrix4cd MM;
-    Eigen::Matrix4cd MS;
-
-    // helper functions to compute DWBA compatible amplitudes
+    // helper functions to compute DWBA compatible amplitudes used in the T1plus() etc. functions
     Eigen::Matrix2cd T1Matrix() const;
     Eigen::Matrix2cd T2Matrix() const;
-
-    Eigen::Matrix2cd R1Matrix() const;
-    Eigen::Matrix2cd R2Matrix() const;
 };
 
 #endif // MATRIXRTCOEFFICIENTS_V3_H
