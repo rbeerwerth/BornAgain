@@ -16,6 +16,7 @@
 #include "KzComputation.h"
 #include "PhysicalConstants.h"
 #include "Slice.h"
+#include <iostream>
 
 namespace
 {
@@ -80,6 +81,22 @@ SpecularMagneticStrategy::computeTR(const std::vector<Slice>& slices,
     nullifyBottomReflection(result.back());
     propagateBackwards(result, slices);
     propagateForwards(result, findNormalizationCoefficients(result.front()));
+
+    for(size_t i = 0; i < result.size(); ++i)
+    {
+
+        auto c = result[i];
+        std::cout << "========================================\n";
+        std::cout << "i = " << i << "\n";
+        std::cout << "k_z = " << c.getKz() << "\n";
+        std::cout << "+\n";
+        std::cout << "T1 = " << c.T1plus() << " T2 = " << c.T2plus() << "\n";
+        std::cout << "R1 = " << c.R1plus() << " R2 = " << c.R2plus() << "\n";
+
+        std::cout << "-\n";
+        std::cout << "T1 = " << c.T1min() << " T2 = " << c.T2min() << "\n";
+        std::cout << "R1 = " << c.R1min() << " R2 = " << c.R2min() << std::endl;
+    }
 
     return result;
 }
