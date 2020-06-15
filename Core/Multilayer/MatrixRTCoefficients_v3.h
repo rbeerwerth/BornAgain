@@ -47,6 +47,10 @@ public:
     //! Returns z-part of the two wavevector eigenmodes
     Eigen::Vector2cd getKz() const override;
 
+    Eigen::Matrix2cd pMatrixHelper(double sign) const;
+    Eigen::Matrix2cd computeP() const;
+    Eigen::Matrix2cd computeInverseP() const;
+
     Eigen::Matrix2cd getReflectionMatrix() const override;
 
 private:

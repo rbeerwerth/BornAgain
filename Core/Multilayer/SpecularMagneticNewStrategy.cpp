@@ -32,8 +32,6 @@ constexpr complex_t I(0.0, 1.0);
 
 } // namespace
 
-
-
 ISpecularStrategy::coeffs_t SpecularMagneticNewStrategy::Execute(const std::vector<Slice>& slices,
                                                               const kvector_t& k) const
 {
@@ -54,39 +52,8 @@ SpecularMagneticNewStrategy::Execute(const std::vector<Slice>& slices,
     return result;
 }
 
-Eigen::Matrix2cd SpecularMagneticNewStrategy::computeP(MatrixRTCoefficients_v3& coeff)
-{
-    auto Lp = coeff.m_lambda(1) + coeff.m_lambda(0);
-    auto Lm = coeff.m_lambda(1) - coeff.m_lambda(0);
-
-    Eigen::Matrix2cd result;
-
-    auto b = coeff.m_b;
-
-    result << Lp + Lm * b.z(), Lm * ( b.x() - I * b.y() ),
-              Lm * ( b.x() + I * b.y() ), Lp - Lm * b.z();
-    result *= 0.5;
-
-    return result;
-}
-
-Eigen::Matrix2cd SpecularMagneticNewStrategy::computeInverseP(MatrixRTCoefficients_v3& coeff)
-{
-    auto Lp = coeff.m_lambda(1) + coeff.m_lambda(0);
-    auto Lm = coeff.m_lambda(1) - coeff.m_lambda(0);
-
-    Eigen::Matrix2cd result;
-
-    auto b = coeff.m_b;
-
-    result << Lp - Lm * b.z(), -Lm * ( b.x() - I * b.y() ),
-              -Lm * ( b.x() + I * b.y() ), Lp + Lm * b.z();
-    result *= 2./(Lp * Lp - Lm * Lm);
-
-    return result;
-}
-
-std::pair<Eigen::Matrix2cd, Eigen::Matrix2cd> SpecularMagneticNewStrategy::computeDelta(MatrixRTCoefficients_v3& coeff, double thickness, double prefactor)
+std::pair<Eigen::Matrix2cd, Eigen::Matrix2cd> SpecularMagneticNewStrategy::computeDelta(
+                            MatrixRTCoefficients_v3& coeff, double thickness, double prefactor)
 {
     auto b = coeff.m_b;
 
@@ -184,7 +151,7 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
     for (size_t i = 0, interfaces = slices.size() - 1; i < interfaces; ++i) {
 
 
-        auto mproduct = Eigen::Matrix2cd( computeInverseP(result[i]) * computeP(result[i+1]) );
+        auto mproduct = Eigen::Matrix2cd( result[i].computeInverseP() * result[i+1].computeP() );
         auto mp       = Eigen::Matrix2cd( Eigen::Matrix2cd::Identity() + mproduct );
         auto mm       = Eigen::Matrix2cd( Eigen::Matrix2cd::Identity() - mproduct );
         auto deltaTemp = computeDelta(result[i], slices[i].thickness(), 1.);
@@ -233,7 +200,7 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
 
     for(size_t i = 0, interfaces = slices.size() - 1; i < interfaces; ++i)
     {
-        auto PInv = Eigen::Matrix2cd( computeInverseP(result[i+1]) * computeP(result[i]) );
+        auto PInv = Eigen::Matrix2cd( result[i+1].computeInverseP() * result[i].computeP() );
         auto mp = Eigen::Matrix2cd::Identity() + PInv;
         auto mm = Eigen::Matrix2cd::Identity() - PInv;
 
