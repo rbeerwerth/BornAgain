@@ -188,7 +188,6 @@ MatrixRTCoefficients_v3::computeDeltaMatrix(double thickness, double prefactor)
 {
     auto b = m_b;
 
-    Eigen::Matrix2cd result;
     Eigen::Matrix2cd deltaSmall;
     Eigen::Matrix2cd deltaLarge;
     auto Lp = prefactor * I * 0.5 * thickness * (m_lambda(1) + m_lambda(0));
@@ -203,15 +202,6 @@ MatrixRTCoefficients_v3::computeDeltaMatrix(double thickness, double prefactor)
             (b.x() + I * b.y()) / factor1, (b.x() + I * b.y()) / factor2;
 
     auto exp1 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({std::exp(Lp), std::exp(Lp) }) ) ;
-    auto exp2 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({std::exp(Lm), std::exp(-Lm)}) );
-
-    if ( std::abs(b.mag() - 1.) < std::numeric_limits<double>::epsilon() * 10.)
-        result = exp1 * Q * exp2 * Q.adjoint();
-    else if(b.mag() == 0.)
-        result = Eigen::Matrix2cd(exp1); // * Eigen::Matrix2cd(exp2);
-    else
-        throw std::runtime_error("Broken magnetic field vector");
-
 
     // separate matrix into large and small part
     auto exp2Large = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({std::exp(Lm), complex_t(0., 0.)}) );
