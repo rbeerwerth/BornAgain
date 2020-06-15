@@ -52,59 +52,6 @@ SpecularMagneticNewStrategy::Execute(const std::vector<Slice>& slices,
     return result;
 }
 
-std::pair<Eigen::Matrix2cd, Eigen::Matrix2cd> SpecularMagneticNewStrategy::computeDelta(
-                            MatrixRTCoefficients_v3& coeff, double thickness, double prefactor)
-{
-    auto b = coeff.m_b;
-
-    Eigen::Matrix2cd result;
-    Eigen::Matrix2cd deltaSmall;
-    Eigen::Matrix2cd deltaLarge;
-    auto Lp = prefactor * I * 0.5 * thickness * (coeff.m_lambda(1) + coeff.m_lambda(0));
-    auto Lm = prefactor * I * 0.5 * thickness * (coeff.m_lambda(1) - coeff.m_lambda(0));
-
-    Eigen::Matrix2cd Q;
-
-    auto factor1 = std::sqrt(2. * ( 1. + b.z()));
-    auto factor2 = std::sqrt(2. * ( 1. - b.z()));
-
-    Q << (1. + b.z()) / factor1, (b.z() - 1.) / factor2,
-            (b.x() + I * b.y()) / factor1, (b.x() + I * b.y()) / factor2;
-
-    auto exp1 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({std::exp(Lp), std::exp(Lp) }) ) ;
-    auto exp2 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({std::exp(Lm), std::exp(-Lm)}) );
-
-    if ( std::abs(b.mag() - 1.) < std::numeric_limits<double>::epsilon() * 10.)
-        result = exp1 * Q * exp2 * Q.adjoint();
-    else if(b.mag() == 0.)
-        result = Eigen::Matrix2cd(exp1) * Eigen::Matrix2cd(exp2);
-    else
-        throw std::runtime_error("Broken magnetic field vector");
-
-
-    // separate matrix into large and small part
-    auto exp2Large = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({std::exp(Lm), complex_t(0., 0.)}) );
-    auto exp2Small = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({complex_t(0., 0.), std::exp(-Lm)}) );
-    if(std::norm(std::exp(-Lm)) > std::norm(std::exp(Lm)) )
-        std::swap(exp2Large, exp2Small);
-
-    // Compute resulting phase matrix according to exp(i p_m d_m) = exp1 * Q * exp2 * Q.adjoint();
-    if (std::abs(b.mag() - 1.) < std::numeric_limits<double>::epsilon() * 10.)
-    {
-        deltaSmall = exp1 * Q * exp2Small * Q.adjoint();
-        deltaLarge = exp1 * Q * exp2Large * Q.adjoint();
-    }else if(b.mag() == 0.)
-    {
-        deltaSmall = exp1 * (exp2Small + exp2Large);
-        deltaLarge = Eigen::Matrix2cd::Zero() ;
-    }
-    else
-        throw std::runtime_error("Broken magnetic field vector");
-
-    return std::make_pair(deltaLarge, deltaSmall);
-
-}
-
 std::vector<MatrixRTCoefficients_v3>
 SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
                                     const std::vector<complex_t>& kzs)
@@ -154,9 +101,9 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
         auto mproduct = Eigen::Matrix2cd( result[i].computeInverseP() * result[i+1].computeP() );
         auto mp       = Eigen::Matrix2cd( Eigen::Matrix2cd::Identity() + mproduct );
         auto mm       = Eigen::Matrix2cd( Eigen::Matrix2cd::Identity() - mproduct );
-        auto deltaTemp = computeDelta(result[i], slices[i].thickness(), 1.);
+        auto deltaTemp = result[i].computeDeltaMatrix(slices[i].thickness(), 1.);
         auto delta     = std::get<0>(deltaTemp) + std::get<1>(deltaTemp);
-        auto deltaInv  = computeDelta(result[i], slices[i].thickness(), -1.);
+        auto deltaInv  = result[i].computeDeltaMatrix(slices[i].thickness(), -1.);
 
         result[i].m_MiL = Eigen::Matrix4cd::Zero();
         result[i].m_MiL.block<2,2>(0, 0) = std::get<0>(deltaInv) * mp;
@@ -204,9 +151,9 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
         auto mp = Eigen::Matrix2cd::Identity() + PInv;
         auto mm = Eigen::Matrix2cd::Identity() - PInv;
 
-        auto deltaTemp = computeDelta(result[i], slices[i].thickness(), 1.);
+        auto deltaTemp = result[i].computeDeltaMatrix(slices[i].thickness(), 1.);
         auto delta = std::get<0>(deltaTemp) + std::get<1>(deltaTemp);
-        auto deltaInv = computeDelta(result[i], slices[i].thickness(), -1.);
+        auto deltaInv = result[i].computeDeltaMatrix(slices[i].thickness(), -1.);
 
 
         Eigen::Matrix4cd MS{Eigen::Matrix4cd::Zero()};
