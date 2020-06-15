@@ -7,7 +7,7 @@
 //!
 //! @homepage  http://www.bornagainproject.org
 //! @license   GNU General Public License v3 or higher (see COPYING)
-//! @copyright Forschungszentrum Jülich GmbH 2018
+//! @copyright Forschungszentrum Jülich GmbH 2020
 //! @authors   Scientific Computing Group at MLZ (see CITATION, AUTHORS)
 //
 // ************************************************************************** //
@@ -16,9 +16,6 @@
 #include "KzComputation.h"
 #include "PhysicalConstants.h"
 #include "Slice.h"
-#include <iostream>
-#include <iomanip>
-#include <unsupported/Eigen/MatrixFunctions>
 
 namespace
 {
@@ -81,26 +78,17 @@ Eigen::Matrix2cd SpecularMagneticNewStrategy::computeInverseP(MatrixRTCoefficien
     Eigen::Matrix2cd result;
 
     auto b = coeff.m_b;
-//    std::cout << " b = " << b << std::endl;
+
     result << Lp - Lm * b.z(), -Lm * ( b.x() - I * b.y() ),
               -Lm * ( b.x() + I * b.y() ), Lp + Lm * b.z();
     result *= 2./(Lp * Lp - Lm * Lm);
-
-//    std::cout << "lp = " << coeff.m_lambda(0) << " lm = " << coeff.m_lambda(1) << std::endl;
-//    std::cout << "Lp = " << Lp << std::endl;
-//    std::cout << "Lm = " << Lm << std::endl;
-//    std::cout << "Lp^2 - Lm^2 = " << (Lp * Lp - Lm * Lm) << std::endl;
 
     return result;
 }
 
 std::pair<Eigen::Matrix2cd, Eigen::Matrix2cd> SpecularMagneticNewStrategy::computeDelta(MatrixRTCoefficients_v3& coeff, double thickness, double prefactor)
-//Eigen::Matrix2cd SpecularMagneticNewStrategy::computeDelta(MatrixRTCoefficients_v3& coeff, double thickness, double prefactor)
 {
     auto b = coeff.m_b;
-
-//    std::cout << "b = " << b << std::endl;
-    auto && cmpfct = [](const auto & cp1, const auto & cp2 ){ return std::norm(cp1) < std::norm(cp2); };
 
     Eigen::Matrix2cd result;
     Eigen::Matrix2cd deltaSmall;
@@ -108,18 +96,6 @@ std::pair<Eigen::Matrix2cd, Eigen::Matrix2cd> SpecularMagneticNewStrategy::compu
     auto Lp = prefactor * I * 0.5 * thickness * (coeff.m_lambda(1) + coeff.m_lambda(0));
     auto Lm = prefactor * I * 0.5 * thickness * (coeff.m_lambda(1) - coeff.m_lambda(0));
 
-//    auto scaling1 = std::max( {std::exp(Lp), std::exp(-1. * Lp)}, cmpfct );
-//    auto scaling2 = std::max( {std::exp(Lm), std::exp(-1. * Lm)}, cmpfct );
-//    auto scaling1 = 1.;
-//    auto scaling2 = 1.;
-
-//    Lp *= prefactor;
-//    Lm *= prefactor;
-
-//    std::cout << "======================= computeDelta(" << prefactor << ")" << std::endl;
-
-
-//    auto Q = Eigen::Matrix2cd::Zero();
     Eigen::Matrix2cd Q;
 
     auto factor1 = std::sqrt(2. * ( 1. + b.z()));
@@ -128,29 +104,9 @@ std::pair<Eigen::Matrix2cd, Eigen::Matrix2cd> SpecularMagneticNewStrategy::compu
     Q << (1. + b.z()) / factor1, (b.z() - 1.) / factor2,
             (b.x() + I * b.y()) / factor1, (b.x() + I * b.y()) / factor2;
 
-//    std::cout << "Q.+ * Q = " << Q.adjoint() * Q << std::endl;
-//    Eigen::Matrix2cd exp2;
-//    return result;
-//    auto && maxExp = std::max( {std::exp(Lp), std::exp(Lm), std::exp(-Lm)}, cmpfct );
-
-
-//    auto scaling1 = 2.;
-//    auto scaling2 = 2.;
-
-//    std::cout << "scaling1 = " << scaling1 << std::endl;
-//    std::cout << "scaling2 = " << scaling2 << std::endl;
-
     auto exp1 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({std::exp(Lp), std::exp(Lp) }) ) ;
-//    exp1 /= scaling1;
     auto exp2 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({std::exp(Lm), std::exp(-Lm)}) );
-//    exp2 /= scaling2;
 
-
-
-//    Eigen::Matrix2cd result2
-
-//    result = exp2 * Q * exp1 * Q.adjoint();
-//    result = Q * Q.adjoint();
     if ( std::abs(b.mag() - 1.) < std::numeric_limits<double>::epsilon() * 10.)
         result = exp1 * Q * exp2 * Q.adjoint();
     else if(b.mag() == 0.)
@@ -158,23 +114,14 @@ std::pair<Eigen::Matrix2cd, Eigen::Matrix2cd> SpecularMagneticNewStrategy::compu
     else
         throw std::runtime_error("Broken magnetic field vector");
 
-//    std::cout << "Q = " << Q << std::endl;
-//    std::cout << "exp1 = " << exp1 << std::endl;
-//    std::cout << "exp2 = " << exp2 << std::endl;
-//    std::cout << "delta = " << result << std::endl;
 
-    auto det = std::exp(Lp) * std::exp(Lp) * std::exp(Lm) * std::exp(-Lm);
-    auto det2 = result(0, 0) * result(1, 1) - result(0, 1) * result(1, 0);
-
-
-
-    // separate matrix into medium and small part
+    // separate matrix into large and small part
     auto exp2Large = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({std::exp(Lm), complex_t(0., 0.)}) );
     auto exp2Small = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({complex_t(0., 0.), std::exp(-Lm)}) );
     if(std::norm(std::exp(-Lm)) > std::norm(std::exp(Lm)) )
         std::swap(exp2Large, exp2Small);
 
-//    result = Q * exp2 * Q.adjoint();
+    // Compute resulting phase matrix according to exp(i p_m d_m) = exp1 * Q * exp2 * Q.adjoint();
     if (std::abs(b.mag() - 1.) < std::numeric_limits<double>::epsilon() * 10.)
     {
         deltaSmall = exp1 * Q * exp2Small * Q.adjoint();
@@ -182,36 +129,13 @@ std::pair<Eigen::Matrix2cd, Eigen::Matrix2cd> SpecularMagneticNewStrategy::compu
     }else if(b.mag() == 0.)
     {
         deltaSmall = exp1 * (exp2Small + exp2Large);
-        deltaLarge = Eigen::Matrix2cd::Zero() ;//exp1 * exp2Large;
+        deltaLarge = Eigen::Matrix2cd::Zero() ;
     }
     else
         throw std::runtime_error("Broken magnetic field vector");
 
-//    std::cout << "result = " << result << std::endl;
-//    std::cout << "deltaS = " << deltaSmall << std::endl;
-//    std::cout << "deltaL = " << deltaLarge << std::endl;
-//    std::cout << "deltaS + deltaL" << deltaSmall + deltaLarge << std::endl;
-
-    auto && fancyDet = [](const Eigen::Matrix2cd matL, const Eigen::Matrix2cd matS){
-        auto det = matL(0, 0) * matL(1, 1) - matL(0, 1) * matL(1, 0) + \
-                matL(0, 0) * matS(1, 1) + matL(1, 1) * matS(0, 0) - matL(0, 1) * matS(1, 0) - matL(1, 0) * matS(0, 1) + \
-                matS(0, 0) * matS(1, 1) - matS(0, 1) * matS(1, 0);
-        return det;
-    };
-
-    auto separatedDet = fancyDet(deltaLarge, deltaSmall);
-
-//    std::cout << "det1(Delta) = " << det << std::endl;
-//    std::cout << "det2(Delta) = " << det2 << std::endl;
-//    std::cout << "fancydet(Delta) = " << separatedDet << std::endl;
-
-//    return result;
     return std::make_pair(deltaLarge, deltaSmall);
 
-    // lazy way
-//    auto pm = prefactor * I * thickness * computeP(coeff);
-//    auto expmatrix = pm.exp();
-//    return expmatrix;
 }
 
 std::vector<MatrixRTCoefficients_v3>
@@ -245,7 +169,6 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
         return result;
     }
 
-    //TODO: check how to restore sign
     const double kz_sign = kzs.front().real() > 0.0 ? 1.0 : -1.0; // save sign to restore it later
     auto B_0 = slices.front().bField();
     result.emplace_back(kz_sign, eigenvalues(kzs.front(), 0.0), kvector_t{0.0, 0.0, 0.0}, 0.0);
@@ -257,74 +180,20 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
                             B.mag() > std::numeric_limits<double>::epsilon() * 10 ? B/B.mag() : kvector_t{0.0, 0.0, 0.0}, magnetic_SLD);
     }
 
-//    auto testindex{1};
-
-
-//    if(testindex >= slices.size())
-//        throw  std::runtime_error("Trying to access invalid slice");
-
-
-//    auto pm0  = computeP(result[testindex]);
-//    auto pmi0 = computeInverseP(result[testindex]);
-
-//    std::cout << "test" << std::endl;
-//    std::cout << "pm0 = " << pm0 << std::endl;
-//    std::cout << "pmi0 = " << pmi0 << std::endl;
-
-
-//    std::cout << "pm0 * pmi0 = " << pm0 * pmi0 << std::endl;
-
-
     // calculate the matrices M_i
     for (size_t i = 0, interfaces = slices.size() - 1; i < interfaces; ++i) {
 
-//        std::cout << "===================================================================================================\ni = "<< i << std::endl;
-//        auto bi = result[i].m_b;
-
-//        std::cout << "b = " << bi << std::endl;
-
-//        std::cout << "lp = " << result[i].m_lambda(0) << " lm = " << result[i].m_lambda(1) << std::endl;
-//        std::cout << "Lp = " << result[i].m_lambda(0) + result[i].m_lambda(1) << " Lm = " << result[i].m_lambda(0) - result[i].m_lambda(1) << std::endl;
-//        std::cout << "exponentials: " << std::exp(I * slices[i].thickness() * result[i].m_lambda(0) ) << " " <<
-//                                         std::exp(-I * slices[i].thickness() * result[i].m_lambda(0) ) << " " <<
-//                                         std::exp(I * slices[i].thickness() * result[i].m_lambda(1) ) << " " <<
-//                                         std::exp(-I * slices[i].thickness() * result[i].m_lambda(1) ) << std::endl;
 
         auto mproduct = Eigen::Matrix2cd( computeInverseP(result[i]) * computeP(result[i+1]) );
-        auto mp = Eigen::Matrix2cd::Identity() + mproduct;
-        auto mm = Eigen::Matrix2cd::Identity() - mproduct;
-//        auto pm1 = ;
+        auto mp       = Eigen::Matrix2cd( Eigen::Matrix2cd::Identity() + mproduct );
+        auto mm       = Eigen::Matrix2cd( Eigen::Matrix2cd::Identity() - mproduct );
         auto deltaTemp = computeDelta(result[i], slices[i].thickness(), 1.);
-        auto delta = std::get<0>(deltaTemp) + std::get<1>(deltaTemp);
-        auto deltaInv = computeDelta(result[i], slices[i].thickness(), -1.);
-
-//        auto delta = Eigen::Matrix2cd( std::get<0>(deltaTemp) + std::get<1>(deltaTemp) );
-//        auto deltaInv = Eigen::Matrix2cd( std::get<0>(deltaInvTemp) + std::get<1>(deltaInvTemp) );
-
-//        auto delta    = computeDelta(result[i], slices[i].thickness(), 1.);
-//        auto deltaInv = computeDelta(result[i], slices[i].thickness(), -1.);
-
-
-//        auto Mi = Eigen::Matrix4cd::Zero();
-//        std::cout << "delta = " << delta << std::endl;
-//        std::cout << "delta^* = " << deltaInv << std::endl;
-
-//        auto detDeltaInv = deltaInv(0, 0) * deltaInv(1, 1) - deltaInv(1, 0) * deltaInv(0, 1);
-
-//        auto Lp = -1.* I * 0.5 * slices[i].thickness() * (result[i].m_lambda(0) + result[i].m_lambda(1));
-//        auto Lm = -1.* I * 0.5 * slices[i].thickness() * (result[i].m_lambda(0) - result[i].m_lambda(1));
-
-//        auto detExact = std::exp(Lp) * std::exp(Lp) * std::exp(Lm) * std::exp(-Lm);
-
-//        std::cout << "det(delta) = " << delta(0, 0) * delta(1, 1) - delta(1, 0) * delta(0, 1) << std::endl;
-//        std::cout << "det(delta^*) = " << detDeltaInv << std::endl;
-
+        auto delta     = std::get<0>(deltaTemp) + std::get<1>(deltaTemp);
+        auto deltaInv  = computeDelta(result[i], slices[i].thickness(), -1.);
 
         result[i].m_MiL = Eigen::Matrix4cd::Zero();
         result[i].m_MiL.block<2,2>(0, 0) = std::get<0>(deltaInv) * mp;
         result[i].m_MiL.block<2,2>(0, 2) = std::get<0>(deltaInv) * mm;
-//        result[i].MiL.block<2,2>(2, 0) = delta * mm;
-//        result[i].MiL.block<2,2>(2, 2) = delta * mp;
 
         result[i].m_MiS = Eigen::Matrix4cd::Zero();
         result[i].m_MiS.block<2,2>(0, 0) = std::get<1>(deltaInv) * mp;
@@ -332,77 +201,38 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
         result[i].m_MiS.block<2,2>(2, 0) = delta * mm;
         result[i].m_MiS.block<2,2>(2, 2) = delta * mp;
 
-//        result[i].Mi.block<2,2>(0, 0) = mp;
-//        result[i].Mi.block<2,2>(0, 2) = mm;
-//        result[i].Mi.block<2,2>(2, 0) = mm;
-//        result[i].Mi.block<2,2>(2, 2) = mp;
-
-
         result[i].m_MiL /= 2.;
         result[i].m_MiS /= 2.;
-//        result[i].Mi /= detExact;
-
-//        std::cout << "MiL = " << result[i].MiL << std::endl;
-//        std::cout << "MiS = " << result[i].MiS << std::endl;
-//        std::cout << "det(Mi) = " << result[i].Mi(0, 1) * result[i].Mi(1, 0) - result[i].Mi(1, 1) * result[i].Mi(0, 0) << std::endl;
-
-
-//        std::cout << "==============================================" << std::endl;
-//        std::cout << std::setprecision(16) << "pm-1 pm+1 = " << mproduct << std::endl;
-//        std::cout << std::setprecision(16) << "delta*L = " << std::get<0>(deltaInv) << std::endl;
-//        std::cout << std::setprecision(16) << "delta*S = " << std::get<1>(deltaInv) << std::endl;
-//        std::cout << std::setprecision(16) << "delta  = " << delta << std::endl;
-//        std::cout << "==============================================" << std::endl;
-
-
-
 
     }
 
 
     // calculate the total tranfer matrix M
-
     if(slices.size() == 2)
     {
-//        result[0].ML = Eigen::Matrix4cd::Zero();
         result[0].m_ML = result[0].m_MiL;
         result[0].m_MS = result[0].m_MiS;
     }
     else
     {
-//        result[slices.size()-2].ML = Eigen::Matrix4cd::Zero();
         result[slices.size()-2].m_ML = result[slices.size()-2].m_MiL;
         result[slices.size()-2].m_MS = result[slices.size()-2].m_MiS;
     }
 
     for (int i = slices.size() - 3; i >= 0; --i)
     {
-//        result[i].ML = result[i].MiL * result[i+1].ML + result[i].MiS * result[i+1].ML + result[i].MiL * result[i+1].MM;
-//        result[i].MM = result[i].MiS * result[i+1].MM + result[i].MiL * result[i+1].MS;
-//        result[i].ML = Eigen::Matrix4cd::Zero();
-//        result[i].MM = result[i].MiS * result[i+1].ML + result[i].MiL * result[i+1].MM;
         result[i].m_ML = result[i].m_MiL * result[i+1].m_ML + result[i].m_MiS * result[i+1].m_ML + result[i].m_MiL * result[i+1].m_MS;
         result[i].m_MS = result[i].m_MiS * result[i+1].m_MS;
     }
 
     // forward propagation
-
-
     // boundary condition in first layer
     auto R = result[0].getReflectionMatrix();
     result[0].m_t_r_plus  << 1., 0., R(0, 0), R(1, 0);
     result[0].m_t_r_minus << 0., 1., R(0, 1), R(1, 1);
 
-//    std::cout << "m_t_r_+ = " << result[0].m_t_r_plus << std::endl;
-//    std::cout << "m_t_r_- = " << result[0].m_t_r_minus << std::endl;
-    // propagate forward
-
-//    std::cout << "Forward propagation" << std::endl;
-
     for(size_t i = 0, interfaces = slices.size() - 1; i < interfaces; ++i)
     {
-//        std::cout << "i = " << i << std::endl;
-//        auto mproduct = Eigen::Matrix2cd( computeInverseP(result[i]) * computeP(result[i+1]) );
         auto PInv = Eigen::Matrix2cd( computeInverseP(result[i+1]) * computeP(result[i]) );
         auto mp = Eigen::Matrix2cd::Identity() + PInv;
         auto mm = Eigen::Matrix2cd::Identity() - PInv;
@@ -428,28 +258,7 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
 
         result[i+1].m_t_r_plus  = ( MS + ML ) * result[i].m_t_r_plus;
         result[i+1].m_t_r_minus = ( MS + ML ) * result[i].m_t_r_minus;
-
-//        std::cout << "M-1 * M = " << ( ML * result[i].MiL + ML * result[i].MiS + MS * result[i].MiL + MS * result[i].MiS ) << std::endl;
-
     }
-
-//    for(size_t i = 0; i < result.size(); ++i)
-//    {
-
-//        auto c = result[i];
-//        std::cout << "========================================\n";
-//        std::cout << "i = " << i << "\n";
-//        std::cout << "k_z = " << c.getKz() << "\n";
-//        std::cout << "+\n";
-//        std::cout << "T1 = " << c.T1plus() << " T2 = " << c.T2plus() << "\n";
-//        std::cout << "R1 = " << c.R1plus() << " R2 = " << c.R2plus() << "\n";
-
-//        std::cout << "-\n";
-//        std::cout << "T1 = " << c.T1min() << " T2 = " << c.T2min() << "\n";
-//        std::cout << "R1 = " << c.R1min() << " R2 = " << c.R2min() << std::endl;
-//    }
-
-
 
     return result;
 }
