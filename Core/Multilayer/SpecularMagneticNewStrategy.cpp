@@ -95,65 +95,82 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
     }
 
     // calculate the matrices M_i
+    computeInterfaceTransferMatrices(result, slices);
+
+    // calculate the total transfer matrix M and store it for every coefficient
+    computeTotalTransferMatrices(result);
+
+    // propagate forward
+    calculateAmplitudes(result, slices);
+
+    return result;
+}
+
+void SpecularMagneticNewStrategy::computeInterfaceTransferMatrices(std::vector<MatrixRTCoefficients_v3>& coeff,
+                                                                   const std::vector<Slice>& slices)
+{
     for (size_t i = 0, interfaces = slices.size() - 1; i < interfaces; ++i) {
 
 
-        auto mproduct = Eigen::Matrix2cd( result[i].computeInverseP() * result[i+1].computeP() );
+        auto mproduct = Eigen::Matrix2cd( coeff[i].computeInverseP() * coeff[i+1].computeP() );
         auto mp       = Eigen::Matrix2cd( Eigen::Matrix2cd::Identity() + mproduct );
         auto mm       = Eigen::Matrix2cd( Eigen::Matrix2cd::Identity() - mproduct );
-        auto deltaTemp = result[i].computeDeltaMatrix(slices[i].thickness(), 1.);
+        auto deltaTemp = coeff[i].computeDeltaMatrix(slices[i].thickness(), 1.);
         auto delta     = std::get<0>(deltaTemp) + std::get<1>(deltaTemp);
-        auto deltaInv  = result[i].computeDeltaMatrix(slices[i].thickness(), -1.);
+        auto deltaInv  = coeff[i].computeDeltaMatrix(slices[i].thickness(), -1.);
 
-        result[i].m_MiL = Eigen::Matrix4cd::Zero();
-        result[i].m_MiL.block<2,2>(0, 0) = std::get<0>(deltaInv) * mp;
-        result[i].m_MiL.block<2,2>(0, 2) = std::get<0>(deltaInv) * mm;
+        coeff[i].m_MiL = Eigen::Matrix4cd::Zero();
+        coeff[i].m_MiL.block<2,2>(0, 0) = std::get<0>(deltaInv) * mp;
+        coeff[i].m_MiL.block<2,2>(0, 2) = std::get<0>(deltaInv) * mm;
 
-        result[i].m_MiS = Eigen::Matrix4cd::Zero();
-        result[i].m_MiS.block<2,2>(0, 0) = std::get<1>(deltaInv) * mp;
-        result[i].m_MiS.block<2,2>(0, 2) = std::get<1>(deltaInv) * mm;
-        result[i].m_MiS.block<2,2>(2, 0) = delta * mm;
-        result[i].m_MiS.block<2,2>(2, 2) = delta * mp;
+        coeff[i].m_MiS = Eigen::Matrix4cd::Zero();
+        coeff[i].m_MiS.block<2,2>(0, 0) = std::get<1>(deltaInv) * mp;
+        coeff[i].m_MiS.block<2,2>(0, 2) = std::get<1>(deltaInv) * mm;
+        coeff[i].m_MiS.block<2,2>(2, 0) = delta * mm;
+        coeff[i].m_MiS.block<2,2>(2, 2) = delta * mp;
 
-        result[i].m_MiL /= 2.;
-        result[i].m_MiS /= 2.;
+        coeff[i].m_MiL /= 2.;
+        coeff[i].m_MiS /= 2.;
 
     }
+}
 
-
-    // calculate the total tranfer matrix M
-    if(slices.size() == 2)
+void SpecularMagneticNewStrategy::computeTotalTransferMatrices(std::vector<MatrixRTCoefficients_v3>& coeff)
+{
+    if(coeff.size() == 2)
     {
-        result[0].m_ML = result[0].m_MiL;
-        result[0].m_MS = result[0].m_MiS;
+        coeff[0].m_ML = coeff[0].m_MiL;
+        coeff[0].m_MS = coeff[0].m_MiS;
     }
     else
     {
-        result[slices.size()-2].m_ML = result[slices.size()-2].m_MiL;
-        result[slices.size()-2].m_MS = result[slices.size()-2].m_MiS;
+        coeff[coeff.size()-2].m_ML = coeff[coeff.size()-2].m_MiL;
+        coeff[coeff.size()-2].m_MS = coeff[coeff.size()-2].m_MiS;
     }
 
-    for (int i = slices.size() - 3; i >= 0; --i)
+    for (int i = coeff.size() - 3; i >= 0; --i)
     {
-        result[i].m_ML = result[i].m_MiL * result[i+1].m_ML + result[i].m_MiS * result[i+1].m_ML + result[i].m_MiL * result[i+1].m_MS;
-        result[i].m_MS = result[i].m_MiS * result[i+1].m_MS;
+        coeff[i].m_ML = coeff[i].m_MiL * coeff[i+1].m_ML + coeff[i].m_MiS * coeff[i+1].m_ML + coeff[i].m_MiL * coeff[i+1].m_MS;
+        coeff[i].m_MS = coeff[i].m_MiS * coeff[i+1].m_MS;
     }
+}
 
-    // forward propagation
-    // boundary condition in first layer
-    auto R = result[0].getReflectionMatrix();
-    result[0].m_t_r_plus  << 1., 0., R(0, 0), R(1, 0);
-    result[0].m_t_r_minus << 0., 1., R(0, 1), R(1, 1);
+void SpecularMagneticNewStrategy::calculateAmplitudes(std::vector<MatrixRTCoefficients_v3>& coeff,
+                                                      const std::vector<Slice>& slices)
+{
+    auto R = coeff[0].getReflectionMatrix();
+    coeff[0].m_t_r_plus  << 1., 0., R(0, 0), R(1, 0);
+    coeff[0].m_t_r_minus << 0., 1., R(0, 1), R(1, 1);
 
     for(size_t i = 0, interfaces = slices.size() - 1; i < interfaces; ++i)
     {
-        auto PInv = Eigen::Matrix2cd( result[i+1].computeInverseP() * result[i].computeP() );
+        auto PInv = Eigen::Matrix2cd( coeff[i+1].computeInverseP() * coeff[i].computeP() );
         auto mp = Eigen::Matrix2cd::Identity() + PInv;
         auto mm = Eigen::Matrix2cd::Identity() - PInv;
 
-        auto deltaTemp = result[i].computeDeltaMatrix(slices[i].thickness(), 1.);
+        auto deltaTemp = coeff[i].computeDeltaMatrix(slices[i].thickness(), 1.);
         auto delta = std::get<0>(deltaTemp) + std::get<1>(deltaTemp);
-        auto deltaInv = result[i].computeDeltaMatrix(slices[i].thickness(), -1.);
+        auto deltaInv = coeff[i].computeDeltaMatrix(slices[i].thickness(), -1.);
 
 
         Eigen::Matrix4cd MS{Eigen::Matrix4cd::Zero()};
@@ -170,11 +187,10 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
         MS /= 2.;
         ML /= 2.;
 
-        result[i+1].m_t_r_plus  = ( MS + ML ) * result[i].m_t_r_plus;
-        result[i+1].m_t_r_minus = ( MS + ML ) * result[i].m_t_r_minus;
+        coeff[i+1].m_t_r_plus  = ( MS + ML ) * coeff[i].m_t_r_plus;
+        coeff[i+1].m_t_r_minus = ( MS + ML ) * coeff[i].m_t_r_minus;
     }
 
-    return result;
 }
 
 namespace
