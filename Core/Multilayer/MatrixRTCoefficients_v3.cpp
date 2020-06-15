@@ -143,6 +143,44 @@ Eigen::Vector2cd MatrixRTCoefficients_v3::getKz() const
     return m_kz_sign * m_lambda;
 }
 
+Eigen::Matrix2cd MatrixRTCoefficients_v3::pMatrixHelper(double sign) const
+{
+    auto Lp = m_lambda(1) + m_lambda(0);
+    auto Lm = m_lambda(1) - m_lambda(0);
+
+    Eigen::Matrix2cd result;
+
+    auto b = m_b;
+
+    result << Lp + sign * Lm * b.z(), sign * Lm * ( b.x() - I * b.y() ),
+              sign * Lm * ( b.x() + I * b.y() ), Lp - sign * Lm * b.z();
+
+    return result;
+}
+
+Eigen::Matrix2cd MatrixRTCoefficients_v3::computeP() const
+{
+    auto result = pMatrixHelper(1.);
+    result *= 0.5;
+
+    return result;
+}
+
+
+
+Eigen::Matrix2cd MatrixRTCoefficients_v3::computeInverseP() const
+{
+    auto Lp = m_lambda(1) + m_lambda(0);
+    auto Lm = m_lambda(1) - m_lambda(0);
+
+    auto result = pMatrixHelper(-1.);
+    result *= 2./(Lp * Lp - Lm * Lm);
+
+    return result;
+}
+
+
+
 Eigen::Matrix2cd MatrixRTCoefficients_v3::getReflectionMatrix() const
 {
     Eigen::Matrix2cd R;
