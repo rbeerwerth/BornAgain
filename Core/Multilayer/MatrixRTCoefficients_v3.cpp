@@ -208,7 +208,7 @@ MatrixRTCoefficients_v3::computeDeltaMatrix(double thickness, double prefactor)
     if ( std::abs(b.mag() - 1.) < std::numeric_limits<double>::epsilon() * 10.)
         result = exp1 * Q * exp2 * Q.adjoint();
     else if(b.mag() == 0.)
-        result = Eigen::Matrix2cd(exp1) * Eigen::Matrix2cd(exp2);
+        result = Eigen::Matrix2cd(exp1); // * Eigen::Matrix2cd(exp2);
     else
         throw std::runtime_error("Broken magnetic field vector");
 
@@ -226,7 +226,7 @@ MatrixRTCoefficients_v3::computeDeltaMatrix(double thickness, double prefactor)
         deltaLarge = exp1 * Q * exp2Large * Q.adjoint();
     }else if(b.mag() == 0.)
     {
-        deltaSmall = exp1 * (exp2Small + exp2Large);
+        deltaSmall = exp1; // * (exp2Small + exp2Large);
         deltaLarge = Eigen::Matrix2cd::Zero() ;
     }
     else
