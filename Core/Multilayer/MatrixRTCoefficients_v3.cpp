@@ -16,7 +16,12 @@
 
 namespace
 {
+using matrixType = Eigen::Matrix4cd;
+
 constexpr complex_t I = complex_t(0.0, 1.0);
+complex_t elementProductDifference(const matrixType & ML, const matrixType & MS,
+                   size_t i0, size_t i1, size_t j0, size_t j1, size_t k0, size_t k1, size_t l0, size_t l1);
+complex_t complexDivision(const complex_t v, const complex_t div);
 } // namespace
 
 MatrixRTCoefficients_v3::MatrixRTCoefficients_v3(double kz_sign, Eigen::Vector2cd eigenvalues,
@@ -140,46 +145,51 @@ Eigen::Vector2cd MatrixRTCoefficients_v3::getKz() const
 
 Eigen::Matrix2cd MatrixRTCoefficients_v3::getReflectionMatrix() const
 {
-    auto && precFunc = [](const auto & ML, const auto & MS,
-                                auto i0, auto i1, auto j0, auto j1, auto k0, auto k1, auto l0, auto l1)
-    {
-        auto diff = std::abs((ML(i0, i1) * ML(j0, j1) - ML(k0, k1) * ML(l0, l1))/(ML(k0, k1) * ML(l0, l1)));
-        if ( !std::isnan(diff) && diff > 10 * std::numeric_limits<double>::epsilon() )
-            throw std::runtime_error("Neglected part too large");
-
-        auto result = ML(i0, i1) * MS(j0, j1) + MS(i0, i1) * ML(j0, j1);
-            result -= (ML(k0, k1) * MS(l0, l1) + MS(k0, k1) * ML(l0, l1));
-            result += MS(i0, i1) * MS(j0, j1) - MS(k0, k1) * MS(l0, l1);
-
-        return result;
-    };
-
-    auto trickyDiv = [](auto M, const auto div)
-    {
-          double max = std::max( std::abs(div.real()), std::abs(div.imag()) );
-          auto divnorm = div / max;
-          auto r = M/max;
-          r /= divnorm;
-          return r;
-    };
-
     Eigen::Matrix2cd R;
 
-    auto denominator = precFunc(m_ML, m_MS, 0, 1,   1, 0,   0, 0,   1, 1);
+    auto denominator = elementProductDifference(m_ML, m_MS, 0, 1,   1, 0,   0, 0,   1, 1);
 
     if( std::isinf(denominator.real()) || std::isinf(denominator.imag()) ||
             std::isnan(denominator.real()) || std::isinf(denominator.imag()) )
         throw std::runtime_error("Pushed this beyond numerical limits");
 
-    R(0, 0) = precFunc(m_ML, m_MS, 2, 1,   1, 0,   2, 0,   1, 1);
-    R(0, 1) = precFunc(m_ML, m_MS, 2, 0,   0, 1,   0, 0,   2, 1);
-    R(1, 1) = precFunc(m_ML, m_MS, 3, 0,   0, 1,   3, 1,   0, 0);
-    R(1, 0) = precFunc(m_ML, m_MS, 3, 1,   1, 0,   3, 0,   1, 1);
+    R(0, 0) = elementProductDifference(m_ML, m_MS, 2, 1,   1, 0,   2, 0,   1, 1);
+    R(0, 1) = elementProductDifference(m_ML, m_MS, 2, 0,   0, 1,   0, 0,   2, 1);
+    R(1, 1) = elementProductDifference(m_ML, m_MS, 3, 0,   0, 1,   3, 1,   0, 0);
+    R(1, 0) = elementProductDifference(m_ML, m_MS, 3, 1,   1, 0,   3, 0,   1, 1);
 
-    R(0, 0) = trickyDiv(R(0, 0), denominator);
-    R(0, 1) = trickyDiv(R(0, 1), denominator);
-    R(1, 0) = trickyDiv(R(1, 0), denominator);
-    R(1, 1) = trickyDiv(R(1, 1), denominator);
+    R(0, 0) = complexDivision(R(0, 0), denominator);
+    R(0, 1) = complexDivision(R(0, 1), denominator);
+    R(1, 0) = complexDivision(R(1, 0), denominator);
+    R(1, 1) = complexDivision(R(1, 1), denominator);
 
     return R;
 }
+
+namespace
+{
+complex_t elementProductDifference(const matrixType & ML, const matrixType & MS,
+                   size_t i0, size_t i1, size_t j0, size_t j1, size_t k0, size_t k1, size_t l0, size_t l1)
+{
+    auto diff = std::abs((ML(i0, i1) * ML(j0, j1) - ML(k0, k1) * ML(l0, l1))/(ML(k0, k1) * ML(l0, l1)));
+    if ( !std::isnan(diff) && diff > 10 * std::numeric_limits<double>::epsilon() )
+        throw std::runtime_error("Neglected part too large");
+
+    auto result = ML(i0, i1) * MS(j0, j1) + MS(i0, i1) * ML(j0, j1);
+        result -= (ML(k0, k1) * MS(l0, l1) + MS(k0, k1) * ML(l0, l1));
+        result += MS(i0, i1) * MS(j0, j1) - MS(k0, k1) * MS(l0, l1);
+
+    return result;
+};
+
+complex_t complexDivision(const complex_t v, const complex_t div)
+{
+      double max = std::max( std::abs(div.real()), std::abs(div.imag()) );
+      auto divnorm = div / max;
+      auto r = v/max;
+      r /= divnorm;
+      return r;
+};
+
+}
+
