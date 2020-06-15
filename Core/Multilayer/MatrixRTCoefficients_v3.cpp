@@ -23,6 +23,7 @@ constexpr complex_t I = complex_t(0.0, 1.0);
 complex_t elementProductDifference(const matrixType & ML, const matrixType & MS,
                    size_t i0, size_t i1, size_t j0, size_t j1, size_t k0, size_t k1, size_t l0, size_t l1);
 complex_t complexDivision(const complex_t v, const complex_t div);
+complex_t GetImExponential(complex_t exponent);
 } // namespace
 
 MatrixRTCoefficients_v3::MatrixRTCoefficients_v3(double kz_sign, Eigen::Vector2cd eigenvalues,
@@ -190,8 +191,8 @@ MatrixRTCoefficients_v3::computeDeltaMatrix(double thickness, double prefactor)
 
     Eigen::Matrix2cd deltaSmall;
     Eigen::Matrix2cd deltaLarge;
-    auto Lp = prefactor * I * 0.5 * thickness * (m_lambda(1) + m_lambda(0));
-    auto Lm = prefactor * I * 0.5 * thickness * (m_lambda(1) - m_lambda(0));
+    auto Lp = prefactor * 0.5 * thickness * (m_lambda(1) + m_lambda(0));
+    auto Lm = prefactor * 0.5 * thickness * (m_lambda(1) - m_lambda(0));
 
     Eigen::Matrix2cd Q;
 
@@ -201,12 +202,12 @@ MatrixRTCoefficients_v3::computeDeltaMatrix(double thickness, double prefactor)
     Q << (1. + b.z()) / factor1, (b.z() - 1.) / factor2,
             (b.x() + I * b.y()) / factor1, (b.x() + I * b.y()) / factor2;
 
-    auto exp1 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({std::exp(Lp), std::exp(Lp) }) ) ;
+    auto exp1 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({GetImExponential(Lp), GetImExponential(Lp) }) ) ;
 
     // separate matrix into large and small part
-    auto exp2Large = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({std::exp(Lm), complex_t(0., 0.)}) );
-    auto exp2Small = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({complex_t(0., 0.), std::exp(-Lm)}) );
-    if(std::norm(std::exp(-Lm)) > std::norm(std::exp(Lm)) )
+    auto exp2Large = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({GetImExponential(Lm), complex_t(0., 0.)}) );
+    auto exp2Small = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({complex_t(0., 0.), GetImExponential(-Lm)}) );
+    if(std::norm(GetImExponential(-Lm)) > std::norm(GetImExponential(Lm)) )
         std::swap(exp2Large, exp2Small);
 
     // Compute resulting phase matrix according to exp(i p_m d_m) = exp1 * Q * exp2 * Q.adjoint();
@@ -273,5 +274,11 @@ complex_t complexDivision(const complex_t v, const complex_t div)
       return r;
 };
 
+complex_t GetImExponential(complex_t exponent)
+{
+    if (exponent.imag() > -std::log(std::numeric_limits<double>::min()))
+        return 0.0;
+    return std::exp(I * exponent);
+}
 }
 
