@@ -22,7 +22,7 @@ namespace
 double magneticSLD(kvector_t B_field);
 Eigen::Vector2cd eigenvalues(complex_t kz, double b_mag);
 Eigen::Vector2cd checkForUnderflow(const Eigen::Vector2cd& eigenvs);
-complex_t GetImExponential(complex_t exponent);
+
 
 // The factor 1e-18 is here to have unit: 1/T*nm^-2
 constexpr double magnetic_prefactor = PhysConsts::m_n * PhysConsts::g_factor_n * PhysConsts::mu_N
@@ -210,13 +210,5 @@ Eigen::Vector2cd checkForUnderflow(const Eigen::Vector2cd& eigenvs)
 {
     auto lambda = [](complex_t value) { return std::abs(value) < 1e-40 ? 1e-40 : value; };
     return {lambda(eigenvs(0)), lambda(eigenvs(1))};
-}
-
-// TODO: use this one? why used? branch cuts?
-complex_t GetImExponential(complex_t exponent)
-{
-    if (exponent.imag() > -std::log(std::numeric_limits<double>::min()))
-        return 0.0;
-    return std::exp(I * exponent);
 }
 } // namespace
