@@ -13,6 +13,7 @@
 // ************************************************************************** //
 
 #include "MatrixRTCoefficients_v3.h"
+#include<iostream>
 
 namespace
 {
@@ -172,6 +173,9 @@ Eigen::Matrix2cd MatrixRTCoefficients_v3::computeInverseP() const
 {
     auto Lp = m_lambda(1) + m_lambda(0);
     auto Lm = m_lambda(1) - m_lambda(0);
+
+    if( std::norm(Lp * Lp - Lm * Lm) < std::numeric_limits<double>::epsilon() * 10)
+        throw std::runtime_error("Singular p_m");
 
     auto result = pMatrixHelper(-1.);
     result *= 2./(Lp * Lp - Lm * Lm);
