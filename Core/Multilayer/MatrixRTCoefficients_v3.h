@@ -51,6 +51,8 @@ public:
     Eigen::Matrix2cd computeP() const;
     Eigen::Matrix2cd computeInverseP() const;
 
+    std::pair<Eigen::Matrix2cd, Eigen::Matrix2cd> computeDeltaMatrix(double thickness, double prefactor);
+
     Eigen::Matrix2cd getReflectionMatrix() const override;
 
 private:
