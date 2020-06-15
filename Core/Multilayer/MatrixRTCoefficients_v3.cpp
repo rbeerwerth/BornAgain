@@ -13,7 +13,6 @@
 // ************************************************************************** //
 
 #include "MatrixRTCoefficients_v3.h"
-#include<iostream>
 
 namespace
 {
