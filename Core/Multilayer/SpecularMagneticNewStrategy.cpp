@@ -176,13 +176,13 @@ void SpecularMagneticNewStrategy::calculateAmplitudes(std::vector<MatrixRTCoeffi
         Eigen::Matrix4cd MS{Eigen::Matrix4cd::Zero()};
         Eigen::Matrix4cd ML{Eigen::Matrix4cd::Zero()};
 
-        ML.block<2,2>(0, 2) = std::get<0>(deltaInv) * mm;
-        ML.block<2,2>(2, 2) = std::get<0>(deltaInv) * mp;
+        ML.block<2,2>(0, 2) = mm * std::get<0>(deltaInv);
+        ML.block<2,2>(2, 2) = mp * std::get<0>(deltaInv);
 
-        MS.block<2,2>(0, 2) = std::get<1>(deltaInv) * mm;
-        MS.block<2,2>(2, 2) = std::get<1>(deltaInv) * mp;
-        MS.block<2,2>(2, 0) = delta * mm;
-        MS.block<2,2>(0, 0) = delta * mp;
+        MS.block<2,2>(0, 2) = mm * std::get<1>(deltaInv);
+        MS.block<2,2>(2, 2) = mp * std::get<1>(deltaInv);
+        MS.block<2,2>(2, 0) = mm * delta;
+        MS.block<2,2>(0, 0) = mp * delta;
 
         MS /= 2.;
         ML /= 2.;
