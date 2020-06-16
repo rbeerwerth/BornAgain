@@ -119,8 +119,8 @@ void SpecularMagneticNewStrategy::computeInterfaceTransferMatrices(std::vector<M
         if(const auto roughness = GetBottomRoughness(slices, i))
             sigma = roughness->getSigma();
 
-        std::cout << "i = " << i << std::endl;
-        std::cout << "sigma = " << sigma << std::endl;
+//        std::cout << "i = " << i << std::endl;
+//        std::cout << "sigma = " << sigma << std::endl;
 
         Eigen::Matrix2cd roughness_sum{Eigen::Matrix2cd::Identity()};
         Eigen::Matrix2cd roughness_diff{Eigen::Matrix2cd::Identity()};
@@ -135,11 +135,11 @@ void SpecularMagneticNewStrategy::computeInterfaceTransferMatrices(std::vector<M
             roughness_sum = factor_sum.exp();
             roughness_diff = factor_diff.exp();
 
-            std::cout << "factor+ = " << factor_sum << std::endl;
-            std::cout << "rough+ = " << roughness_sum << std::endl;
+//            std::cout << "factor+ = " << factor_sum << std::endl;
+//            std::cout << "rough+ = " << roughness_sum << std::endl;
 
-            std::cout << "factor- = " << factor_diff << std::endl;
-            std::cout << "rough- = " << roughness_diff << std::endl;
+//            std::cout << "factor- = " << factor_diff << std::endl;
+//            std::cout << "rough- = " << roughness_diff << std::endl;
         }
 
 
