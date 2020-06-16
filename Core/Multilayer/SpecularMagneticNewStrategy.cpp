@@ -14,8 +14,12 @@
 
 #include "SpecularMagneticNewStrategy.h"
 #include "KzComputation.h"
+#include "LayerRoughness.h"
 #include "PhysicalConstants.h"
 #include "Slice.h"
+
+#include<iostream>
+#include <unsupported/Eigen/MatrixFunctions>
 
 namespace
 {
@@ -29,7 +33,8 @@ constexpr double magnetic_prefactor = PhysConsts::m_n * PhysConsts::g_factor_n *
                                       / PhysConsts::h_bar / PhysConsts::h_bar / 4. / M_PI * 1e-18;
 constexpr complex_t I(0.0, 1.0);
 
-
+const LayerRoughness* GetBottomRoughness(const std::vector<Slice>& slices,
+                                         const size_t slice_index);
 } // namespace
 
 ISpecularStrategy::coeffs_t SpecularMagneticNewStrategy::Execute(const std::vector<Slice>& slices,
@@ -110,11 +115,39 @@ void SpecularMagneticNewStrategy::computeInterfaceTransferMatrices(std::vector<M
                                                                    const std::vector<Slice>& slices)
 {
     for (size_t i = 0, interfaces = slices.size() - 1; i < interfaces; ++i) {
+        double sigma = 0.;
+        if(const auto roughness = GetBottomRoughness(slices, i))
+            sigma = roughness->getSigma();
+
+        std::cout << "i = " << i << std::endl;
+        std::cout << "sigma = " << sigma << std::endl;
+
+        Eigen::Matrix2cd roughness_sum{Eigen::Matrix2cd::Identity()};
+        Eigen::Matrix2cd roughness_diff{Eigen::Matrix2cd::Identity()};
+        if(sigma != 0.)
+        {
+            auto pi = coeff[i].computeP();
+            auto pi1 = coeff[i+1].computeP();
+
+            auto factor_sum  = Eigen::Matrix2cd{-sigma * sigma / 2. * (pi1 + pi) * (pi1 + pi)};
+            auto factor_diff = Eigen::Matrix2cd{-sigma * sigma / 2. * (pi1 - pi) * (pi1 - pi)};
+
+            roughness_sum = factor_sum.exp();
+            roughness_diff = factor_diff.exp();
+
+            std::cout << "factor+ = " << factor_sum << std::endl;
+            std::cout << "rough+ = " << roughness_sum << std::endl;
+
+            std::cout << "factor- = " << factor_diff << std::endl;
+            std::cout << "rough- = " << roughness_diff << std::endl;
+        }
+
+
 
 
         auto mproduct = Eigen::Matrix2cd( coeff[i].computeInverseP() * coeff[i+1].computeP() );
-        auto mp       = Eigen::Matrix2cd( Eigen::Matrix2cd::Identity() + mproduct );
-        auto mm       = Eigen::Matrix2cd( Eigen::Matrix2cd::Identity() - mproduct );
+        auto mp       = Eigen::Matrix2cd( (Eigen::Matrix2cd::Identity() + mproduct ) * roughness_diff);
+        auto mm       = Eigen::Matrix2cd( (Eigen::Matrix2cd::Identity() - mproduct ) * roughness_sum);
         auto deltaTemp = coeff[i].computeDeltaMatrix(slices[i].thickness(), 1.);
         auto delta     = std::get<0>(deltaTemp) + std::get<1>(deltaTemp);
         auto deltaInv  = coeff[i].computeDeltaMatrix(slices[i].thickness(), -1.);
@@ -210,5 +243,12 @@ Eigen::Vector2cd checkForUnderflow(const Eigen::Vector2cd& eigenvs)
 {
     auto lambda = [](complex_t value) { return std::abs(value) < 1e-40 ? 1e-40 : value; };
     return {lambda(eigenvs(0)), lambda(eigenvs(1))};
+}
+
+const LayerRoughness* GetBottomRoughness(const std::vector<Slice>& slices, const size_t slice_index)
+{
+    if (slice_index + 1 < slices.size())
+        return slices[slice_index + 1].topRoughness();
+    return nullptr;
 }
 } // namespace
