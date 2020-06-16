@@ -21,6 +21,8 @@
 #include<iostream>
 #include <unsupported/Eigen/MatrixFunctions>
 
+//TODO: create a test that compares forward and backward result
+
 namespace
 {
 double magneticSLD(kvector_t B_field);
