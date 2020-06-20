@@ -144,6 +144,11 @@ void SpecularMagneticNewStrategy::computeInterfaceTransferMatrices(std::vector<M
         auto delta     = std::get<0>(deltaTemp) + std::get<1>(deltaTemp);
         auto deltaInv  = coeff[i].computeDeltaMatrix(slices[i].thickness(), -1.);
 
+        std::cout << "deltaL = " << std::get<0>(deltaTemp) << std::endl;
+        std::cout << "deltaS = " << std::get<1>(deltaTemp) << std::endl;
+        std::cout << "delta*L = " << std::get<0>(deltaInv) << std::endl;
+        std::cout << "delta*S = " << std::get<1>(deltaInv) << std::endl;
+
         coeff[i].m_MiL = Eigen::Matrix4cd::Zero();
         coeff[i].m_MiL.block<2,2>(0, 0) = std::get<0>(deltaInv) * mp;
         coeff[i].m_MiL.block<2,2>(0, 2) = std::get<0>(deltaInv) * mm;
