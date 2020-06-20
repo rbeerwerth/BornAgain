@@ -14,6 +14,8 @@
 
 #include "MatrixRTCoefficients_v3.h"
 
+#include<iostream>
+
 namespace
 {
 using matrixType = Eigen::Matrix4cd;
@@ -29,6 +31,7 @@ MatrixRTCoefficients_v3::MatrixRTCoefficients_v3(double kz_sign, Eigen::Vector2c
                                                  kvector_t b, double magnetic_SLD)
     : m_kz_sign(kz_sign), m_lambda(std::move(eigenvalues)), m_b(std::move(b)), m_magnetic_SLD(magnetic_SLD)
 {
+//    std::cout << "lambda = " << m_lambda << std::endl;
 }
 
 MatrixRTCoefficients_v3::MatrixRTCoefficients_v3(const MatrixRTCoefficients_v3& other) = default;
@@ -240,10 +243,18 @@ Eigen::Matrix2cd MatrixRTCoefficients_v3::getReflectionMatrix() const
     R(1, 1) = elementProductDifference(m_ML, m_MS, 3, 0,   0, 1,   3, 1,   0, 0);
     R(1, 0) = elementProductDifference(m_ML, m_MS, 3, 1,   1, 0,   3, 0,   1, 1);
 
+    std::cout << "R = " << R << std::endl;
+    std::cout << "denom = " << denominator << std::endl;
+
     R(0, 0) = complexDivision(R(0, 0), denominator);
     R(0, 1) = complexDivision(R(0, 1), denominator);
     R(1, 0) = complexDivision(R(1, 0), denominator);
     R(1, 1) = complexDivision(R(1, 1), denominator);
+
+    std::cout << "ML = " << m_ML << std::endl;
+    std::cout << "MS = " << m_MS << std::endl;
+
+    std::cout << "R = " << R << std::endl;
 
     return R;
 }
@@ -253,13 +264,32 @@ namespace
 complex_t elementProductDifference(const matrixType & ML, const matrixType & MS,
                    size_t i0, size_t i1, size_t j0, size_t j1, size_t k0, size_t k1, size_t l0, size_t l1)
 {
-    auto diff = std::abs((ML(i0, i1) * ML(j0, j1) - ML(k0, k1) * ML(l0, l1))/(ML(k0, k1) * ML(l0, l1)));
-    if ( !std::isnan(diff) && diff > 10 * std::numeric_limits<double>::epsilon() )
-        throw std::runtime_error("Neglected part too large");
-
+//    auto result = ML(i0, i1) * ML(j0, j1) - ML(k0, k1) * ML(l0, l1);
     auto result = ML(i0, i1) * MS(j0, j1) + MS(i0, i1) * ML(j0, j1);
         result -= (ML(k0, k1) * MS(l0, l1) + MS(k0, k1) * ML(l0, l1));
         result += MS(i0, i1) * MS(j0, j1) - MS(k0, k1) * MS(l0, l1);
+//    auto result = MS(i0, i1) * MS(j0, j1) - MS(k0, k1) * MS(l0, l1);
+
+    auto diff = std::abs( complexDivision(ML(i0, i1) * ML(j0, j1) - ML(k0, k1) * ML(l0, l1),
+                          ML(i0, i1) * ML(j0, j1) + ML(k0, k1) * ML(l0, l1) ) );
+//    auto diff = std::abs( complexDivision( (ML(i0, i1) * ML(j0, j1) - ML(k0, k1) * ML(l0, l1)),
+//                                           ML(k0, k1) * ML(l0, l1) ) );
+
+//    auto diff = std::abs( complexDivision(ML(i0, i1) * ML(j0, j1) - ML(k0, k1) * ML(l0, l1),
+//                          result ) );
+
+    auto diff2 = std::abs( complexDivision( ML(i0, i1) * MS(j0, j1) + MS(i0, i1) * ML(j0, j1) - (ML(k0, k1) * MS(l0, l1) + MS(k0, k1) * ML(l0, l1)),
+                      ML(i0, i1) * MS(j0, j1) + MS(i0, i1) * ML(j0, j1) + (ML(k0, k1) * MS(l0, l1) + MS(k0, k1) * ML(l0, l1)) ) );
+
+    std::cout << "delta = " << diff << " result = " << result << std::endl;
+    std::cout << "delta2 = " << diff2 << " result = " << result << std::endl;
+    if ( !std::isnan(diff) && diff > 1000 * std::numeric_limits<double>::epsilon() )
+    {
+        std::cout << "delta = " << diff << " result = " << result << std::endl;
+//        std::cout << "t1 = " << ML(i0, i1) * ML(j0, j1) << " t2 = " << ML(k0, k1) * ML(l0, l1) << std::endl;
+//        std::cout << "rel. delta = "<< diff/(ML(k0, k1) * ML(l0, l1)) << std::endl;
+//        throw std::runtime_error("Neglected part too large");
+    }
 
     return result;
 };
