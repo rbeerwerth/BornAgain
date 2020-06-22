@@ -209,19 +209,8 @@ MatrixRTCoefficients_v3::computeDeltaMatrix(double thickness, double prefactor)
     // separate matrix into large and small part
     auto exp2Large = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({GetImExponential(prefactor * Lm), complex_t(0., 0.)}) );
     auto exp2Small = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({complex_t(0., 0.), GetImExponential(- prefactor * Lm)}) );
-//    if(std::imag(GetImExponential(-prefactor * Lm)) < std::imag(GetImExponential(prefactor * Lm)) )
-//    if(std::norm(GetImExponential(-Lm)) > std::norm(GetImExponential(Lm)) )
-//    if(std::imag(GetImExponential(-Lm)) < std::imag(GetImExponential(Lm)) )
-//    if(std::imag(GetImExponential(-Lm)) > std::imag(GetImExponential(Lm)) )
     if(std::imag(-Lm) > std::imag(Lm) )
-    {
         std::swap(exp2Large, exp2Small);
-        std::cout << "diags: = " << exp2Large(1, 1) << " " << exp2Small(0, 0) << std::endl;
-    }
-    else
-        std::cout << "diags: = " << exp2Large(0, 0) << " " << exp2Small(1, 1) << std::endl;
-
-    std::cout << "exp1 = " << GetImExponential(Lp) << std::endl;
 
     // Compute resulting phase matrix according to exp(i p_m d_m) = exp1 * Q * exp2 * Q.adjoint();
     if (std::abs(b.mag() - 1.) < std::numeric_limits<double>::epsilon() * 10.)
@@ -275,30 +264,16 @@ namespace
 complex_t elementProductDifference(const matrixType & ML, const matrixType & MS,
                    size_t i0, size_t i1, size_t j0, size_t j1, size_t k0, size_t k1, size_t l0, size_t l1)
 {
-//    auto result = ML(i0, i1) * ML(j0, j1) - ML(k0, k1) * ML(l0, l1);
     auto result = ML(i0, i1) * MS(j0, j1) + MS(i0, i1) * ML(j0, j1);
         result -= (ML(k0, k1) * MS(l0, l1) + MS(k0, k1) * ML(l0, l1));
         result += MS(i0, i1) * MS(j0, j1) - MS(k0, k1) * MS(l0, l1);
-//    auto result = MS(i0, i1) * MS(j0, j1) - MS(k0, k1) * MS(l0, l1);
 
     auto diff = std::abs( complexDivision(ML(i0, i1) * ML(j0, j1) - ML(k0, k1) * ML(l0, l1),
                           ML(i0, i1) * ML(j0, j1) + ML(k0, k1) * ML(l0, l1) ) );
-//    auto diff = std::abs( complexDivision( (ML(i0, i1) * ML(j0, j1) - ML(k0, k1) * ML(l0, l1)),
-//                                           ML(k0, k1) * ML(l0, l1) ) );
 
-//    auto diff = std::abs( complexDivision(ML(i0, i1) * ML(j0, j1) - ML(k0, k1) * ML(l0, l1),
-//                          result ) );
-
-    auto diff2 = std::abs( complexDivision( ML(i0, i1) * MS(j0, j1) + MS(i0, i1) * ML(j0, j1) - (ML(k0, k1) * MS(l0, l1) + MS(k0, k1) * ML(l0, l1)),
-                      ML(i0, i1) * MS(j0, j1) + MS(i0, i1) * ML(j0, j1) + (ML(k0, k1) * MS(l0, l1) + MS(k0, k1) * ML(l0, l1)) ) );
-
-    std::cout << "delta = " << diff << " result = " << result << std::endl;
-    std::cout << "delta2 = " << diff2 << " result = " << result << std::endl;
-    if ( !std::isnan(diff) && diff > 1000 * std::numeric_limits<double>::epsilon() )
+    if ( !std::isnan(diff) && diff > 1e-10 ) // 10 * std::numeric_limits<double>::epsilon() )
     {
         std::cout << "delta = " << diff << " result = " << result << std::endl;
-//        std::cout << "t1 = " << ML(i0, i1) * ML(j0, j1) << " t2 = " << ML(k0, k1) * ML(l0, l1) << std::endl;
-//        std::cout << "rel. delta = "<< diff/(ML(k0, k1) * ML(l0, l1)) << std::endl;
 //        throw std::runtime_error("Neglected part too large");
     }
 
