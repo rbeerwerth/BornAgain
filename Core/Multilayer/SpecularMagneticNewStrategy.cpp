@@ -119,6 +119,7 @@ void SpecularMagneticNewStrategy::computeInterfaceTransferMatrices(std::vector<M
                                                                    const std::vector<Slice>& slices)
 {
     for (size_t i = 0, interfaces = slices.size() - 1; i < interfaces; ++i) {
+        std::cout << "i = " << i << std::endl;
         double sigma = 0.;
         if(const auto roughness = GetBottomRoughness(slices, i))
             sigma = roughness->getSigma();
@@ -150,25 +151,45 @@ void SpecularMagneticNewStrategy::computeInterfaceTransferMatrices(std::vector<M
         std::cout << "delta*S = " << std::get<1>(deltaInv) << std::endl;
 
         coeff[i].m_MiL = Eigen::Matrix4cd::Zero();
+        // normal large and small for beyond critical angle
         coeff[i].m_MiL.block<2,2>(0, 0) = std::get<0>(deltaInv) * mp;
         coeff[i].m_MiL.block<2,2>(0, 2) = std::get<0>(deltaInv) * mm;
 
-//        coeff[i].m_MiL.block<2,2>(2, 0) = std::get<0>(deltaTemp) * mm;
-//        coeff[i].m_MiL.block<2,2>(2, 2) = std::get<0>(deltaTemp) * mp;
+        coeff[i].m_MiL.block<2,2>(2, 0) = std::get<0>(deltaTemp) * mm;
+        coeff[i].m_MiL.block<2,2>(2, 2) = std::get<0>(deltaTemp) * mp;
+
+        // swap large and small
+//        coeff[i].m_MiL.block<2,2>(0, 0) = std::get<1>(deltaInv) * mp;
+//        coeff[i].m_MiL.block<2,2>(0, 2) = std::get<1>(deltaInv) * mm;
+
+//        coeff[i].m_MiL.block<2,2>(2, 0) = std::get<1>(deltaTemp) * mm;
+//        coeff[i].m_MiL.block<2,2>(2, 2) = std::get<1>(deltaTemp) * mp;
 
 
         coeff[i].m_MiS = Eigen::Matrix4cd::Zero();
+        // normal large and small for beyond critical angle
         coeff[i].m_MiS.block<2,2>(0, 0) = std::get<1>(deltaInv) * mp;
         coeff[i].m_MiS.block<2,2>(0, 2) = std::get<1>(deltaInv) * mm;
-        coeff[i].m_MiS.block<2,2>(2, 0) = delta * mm;
-        coeff[i].m_MiS.block<2,2>(2, 2) = delta * mp;
 
-//        coeff[i].m_MiS.block<2,2>(2, 0) = std::get<1>(deltaTemp) * mm;
-//        coeff[i].m_MiS.block<2,2>(2, 2) = std::get<1>(deltaTemp) * mp;
+//        coeff[i].m_MiS.block<2,2>(2, 0) = delta * mm;
+//        coeff[i].m_MiS.block<2,2>(2, 2) = delta * mp;
+
+        coeff[i].m_MiS.block<2,2>(2, 0) = std::get<1>(deltaTemp) * mm;
+        coeff[i].m_MiS.block<2,2>(2, 2) = std::get<1>(deltaTemp) * mp;
+
+        // swap large and small
+//        coeff[i].m_MiS.block<2,2>(0, 0) = std::get<0>(deltaInv) * mp;
+//        coeff[i].m_MiS.block<2,2>(0, 2) = std::get<0>(deltaInv) * mm;
+
+//        coeff[i].m_MiS.block<2,2>(2, 0) = std::get<0>(deltaTemp) * mm;
+//        coeff[i].m_MiS.block<2,2>(2, 2) = std::get<0>(deltaTemp) * mp;
 
 
         coeff[i].m_MiL /= 2.;
         coeff[i].m_MiS /= 2.;
+
+        std::cout << "M_i^L = " << coeff[i].m_MiL << std::endl;
+        std::cout << "M_i^S = " << coeff[i].m_MiS << std::endl;
     }
 }
 
@@ -183,19 +204,22 @@ void SpecularMagneticNewStrategy::computeTotalTransferMatrices(std::vector<Matri
     {
         coeff[coeff.size()-2].m_ML = coeff[coeff.size()-2].m_MiL;
         coeff[coeff.size()-2].m_MS = coeff[coeff.size()-2].m_MiS;
+
+//        std::cout << "i = " << coeff.size()-2 << std::endl;
+//        std::cout << "M^L = " << coeff[coeff.size()-2].m_ML << std::endl;
+//        std::cout << "M^S = " << coeff[coeff.size()-2].m_MS << std::endl;
+
     }
 
     for (int i = coeff.size() - 3; i >= 0; --i)
     {
-        std::cout << "i = " << i << std::endl;
-        std::cout << "M_i^L = " << coeff[i].m_MiL << std::endl;
-        std::cout << "M_i^S = " << coeff[i].m_MiS << std::endl;
+//        std::cout << "i = " << i << std::endl;
 
         coeff[i].m_ML = coeff[i].m_MiL * coeff[i+1].m_ML + coeff[i].m_MiS * coeff[i+1].m_ML + coeff[i].m_MiL * coeff[i+1].m_MS;
         coeff[i].m_MS = coeff[i].m_MiS * coeff[i+1].m_MS;
 
-        std::cout << "M^L = " << coeff[i].m_ML << std::endl;
-        std::cout << "M^S = " << coeff[i].m_MS << std::endl;
+//        std::cout << "M^L = " << coeff[i].m_ML << std::endl;
+//        std::cout << "M^S = " << coeff[i].m_MS << std::endl;
     }
 }
 

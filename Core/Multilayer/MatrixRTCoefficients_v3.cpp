@@ -193,8 +193,8 @@ MatrixRTCoefficients_v3::computeDeltaMatrix(double thickness, double prefactor)
 
     Eigen::Matrix2cd deltaSmall;
     Eigen::Matrix2cd deltaLarge;
-    auto Lp = prefactor * 0.5 * thickness * (m_lambda(1) + m_lambda(0));
-    auto Lm = prefactor * 0.5 * thickness * (m_lambda(1) - m_lambda(0));
+    auto Lp = 0.5 * thickness * (m_lambda(1) + m_lambda(0));
+    auto Lm = 0.5 * thickness * (m_lambda(1) - m_lambda(0));
 
     Eigen::Matrix2cd Q;
 
@@ -204,13 +204,24 @@ MatrixRTCoefficients_v3::computeDeltaMatrix(double thickness, double prefactor)
     Q << (1. + b.z()) / factor1, (b.z() - 1.) / factor2,
             (b.x() + I * b.y()) / factor1, (b.x() + I * b.y()) / factor2;
 
-    auto exp1 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({GetImExponential(Lp), GetImExponential(Lp) }) ) ;
+    auto exp1 = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({GetImExponential(prefactor * Lp), GetImExponential(prefactor * Lp) }) ) ;
 
     // separate matrix into large and small part
-    auto exp2Large = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({GetImExponential(Lm), complex_t(0., 0.)}) );
-    auto exp2Small = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({complex_t(0., 0.), GetImExponential(-Lm)}) );
-    if(std::norm(GetImExponential(-Lm)) > std::norm(GetImExponential(Lm)) )
+    auto exp2Large = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({GetImExponential(prefactor * Lm), complex_t(0., 0.)}) );
+    auto exp2Small = Eigen::Matrix2cd( Eigen::DiagonalMatrix<complex_t, 2>({complex_t(0., 0.), GetImExponential(- prefactor * Lm)}) );
+//    if(std::imag(GetImExponential(-prefactor * Lm)) < std::imag(GetImExponential(prefactor * Lm)) )
+//    if(std::norm(GetImExponential(-Lm)) > std::norm(GetImExponential(Lm)) )
+//    if(std::imag(GetImExponential(-Lm)) < std::imag(GetImExponential(Lm)) )
+//    if(std::imag(GetImExponential(-Lm)) > std::imag(GetImExponential(Lm)) )
+    if(std::imag(-Lm) > std::imag(Lm) )
+    {
         std::swap(exp2Large, exp2Small);
+        std::cout << "diags: = " << exp2Large(1, 1) << " " << exp2Small(0, 0) << std::endl;
+    }
+    else
+        std::cout << "diags: = " << exp2Large(0, 0) << " " << exp2Small(1, 1) << std::endl;
+
+    std::cout << "exp1 = " << GetImExponential(Lp) << std::endl;
 
     // Compute resulting phase matrix according to exp(i p_m d_m) = exp1 * Q * exp2 * Q.adjoint();
     if (std::abs(b.mag() - 1.) < std::numeric_limits<double>::epsilon() * 10.)
@@ -243,18 +254,18 @@ Eigen::Matrix2cd MatrixRTCoefficients_v3::getReflectionMatrix() const
     R(1, 1) = elementProductDifference(m_ML, m_MS, 3, 0,   0, 1,   3, 1,   0, 0);
     R(1, 0) = elementProductDifference(m_ML, m_MS, 3, 1,   1, 0,   3, 0,   1, 1);
 
-    std::cout << "R = " << R << std::endl;
-    std::cout << "denom = " << denominator << std::endl;
+//    std::cout << "R = " << R << std::endl;
+//    std::cout << "denom = " << denominator << std::endl;
 
     R(0, 0) = complexDivision(R(0, 0), denominator);
     R(0, 1) = complexDivision(R(0, 1), denominator);
     R(1, 0) = complexDivision(R(1, 0), denominator);
     R(1, 1) = complexDivision(R(1, 1), denominator);
 
-    std::cout << "ML = " << m_ML << std::endl;
-    std::cout << "MS = " << m_MS << std::endl;
+//    std::cout << "ML = " << m_ML << std::endl;
+//    std::cout << "MS = " << m_MS << std::endl;
 
-    std::cout << "R = " << R << std::endl;
+//    std::cout << "R = " << R << std::endl;
 
     return R;
 }
