@@ -133,15 +133,15 @@ void SpecularMagneticNewStrategy::computeInterfaceTransferMatrices(std::vector<M
             auto factor_sum  = Eigen::Matrix2cd{-sigma * sigma / 2. * (pi1 + pi) * (pi1 + pi)};
             auto factor_diff = Eigen::Matrix2cd{-sigma * sigma / 2. * (pi1 - pi) * (pi1 - pi)};
 
-            roughness_sum = factor_sum.exp();
+            roughness_sum  = factor_sum.exp();
             roughness_diff = factor_diff.exp();
         }
 
         auto mproduct = Eigen::Matrix2cd( coeff[i].computeInverseP() * coeff[i+1].computeP() );
         auto mp       = Eigen::Matrix2cd( (Eigen::Matrix2cd::Identity() + mproduct ) * roughness_diff);
         auto mm       = Eigen::Matrix2cd( (Eigen::Matrix2cd::Identity() - mproduct ) * roughness_sum);
-        auto delta = coeff[i].computeDeltaMatrix(slices[i].thickness(), 1.);
-        auto deltaInv  = coeff[i].computeDeltaMatrix(slices[i].thickness(), -1.);
+        auto delta    = coeff[i].computeDeltaMatrix(slices[i].thickness(), 1.);
+        auto deltaInv = coeff[i].computeDeltaMatrix(slices[i].thickness(), -1.);
 
         coeff[i].m_MiL = Eigen::Matrix4cd::Zero();
         coeff[i].m_MiL.block<2,2>(0, 0) = std::get<0>(deltaInv) * mp;
@@ -192,9 +192,7 @@ void SpecularMagneticNewStrategy::calculateAmplitudes(std::vector<MatrixRTCoeffi
         auto PInv = Eigen::Matrix2cd( coeff[i+1].computeInverseP() * coeff[i].computeP() );
         auto mp = 0.5 * (Eigen::Matrix2cd::Identity() + PInv);
         auto mm = 0.5 * (Eigen::Matrix2cd::Identity() - PInv);
-
-        auto deltaTemp = coeff[i].computeDeltaMatrix(slices[i].thickness(), 1.);
-        auto delta = std::get<0>(deltaTemp) + std::get<1>(deltaTemp);
+        auto delta    = coeff[i].computeDeltaMatrix(slices[i].thickness(), 1.);
         auto deltaInv = coeff[i].computeDeltaMatrix(slices[i].thickness(), -1.);
 
         Eigen::Matrix4cd MS{Eigen::Matrix4cd::Zero()};
@@ -202,11 +200,13 @@ void SpecularMagneticNewStrategy::calculateAmplitudes(std::vector<MatrixRTCoeffi
 
         ML.block<2,2>(0, 2) = mm * std::get<0>(deltaInv);
         ML.block<2,2>(2, 2) = mp * std::get<0>(deltaInv);
+        ML.block<2,2>(2, 0) = mm * std::get<0>(delta);
+        ML.block<2,2>(0, 0) = mp * std::get<0>(delta);
 
         MS.block<2,2>(0, 2) = mm * std::get<1>(deltaInv);
         MS.block<2,2>(2, 2) = mp * std::get<1>(deltaInv);
-        MS.block<2,2>(2, 0) = mm * delta;
-        MS.block<2,2>(0, 0) = mp * delta;
+        MS.block<2,2>(2, 0) = mm * std::get<1>(delta);
+        MS.block<2,2>(0, 0) = mp * std::get<1>(delta);
 
         coeff[i+1].m_t_r_plus  = ( MS + ML ) * coeff[i].m_t_r_plus;
         coeff[i+1].m_t_r_minus = ( MS + ML ) * coeff[i].m_t_r_minus;
