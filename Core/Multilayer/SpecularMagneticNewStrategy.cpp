@@ -90,7 +90,7 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
         return result;
     }
 
-    std::cout << "q = " << 2. * kzs.front() << std::endl;
+//    std::cout << "q = " << 2. * kzs.front() << std::endl;
 
     const double kz_sign = kzs.front().real() > 0.0 ? 1.0 : -1.0; // save sign to restore it later
     auto B_0 = slices.front().bField();
@@ -119,7 +119,7 @@ void SpecularMagneticNewStrategy::computeInterfaceTransferMatrices(std::vector<M
                                                                    const std::vector<Slice>& slices)
 {
     for (size_t i = 0, interfaces = slices.size() - 1; i < interfaces; ++i) {
-        std::cout << "i = " << i << std::endl;
+//        std::cout << "i = " << i << std::endl;
         double sigma = 0.;
         if(const auto roughness = GetBottomRoughness(slices, i))
             sigma = roughness->getSigma();
@@ -145,10 +145,10 @@ void SpecularMagneticNewStrategy::computeInterfaceTransferMatrices(std::vector<M
         auto delta     = std::get<0>(deltaTemp) + std::get<1>(deltaTemp);
         auto deltaInv  = coeff[i].computeDeltaMatrix(slices[i].thickness(), -1.);
 
-        std::cout << "deltaL = " << std::get<0>(deltaTemp) << std::endl;
-        std::cout << "deltaS = " << std::get<1>(deltaTemp) << std::endl;
-        std::cout << "delta*L = " << std::get<0>(deltaInv) << std::endl;
-        std::cout << "delta*S = " << std::get<1>(deltaInv) << std::endl;
+//        std::cout << "deltaL = " << std::get<0>(deltaTemp) << std::endl;
+//        std::cout << "deltaS = " << std::get<1>(deltaTemp) << std::endl;
+//        std::cout << "delta*L = " << std::get<0>(deltaInv) << std::endl;
+//        std::cout << "delta*S = " << std::get<1>(deltaInv) << std::endl;
 
         coeff[i].m_MiL = Eigen::Matrix4cd::Zero();
         // normal large and small for beyond critical angle
@@ -188,8 +188,8 @@ void SpecularMagneticNewStrategy::computeInterfaceTransferMatrices(std::vector<M
         coeff[i].m_MiL /= 2.;
         coeff[i].m_MiS /= 2.;
 
-        std::cout << "M_i^L = " << coeff[i].m_MiL << std::endl;
-        std::cout << "M_i^S = " << coeff[i].m_MiS << std::endl;
+//        std::cout << "M_i^L = " << coeff[i].m_MiL << std::endl;
+//        std::cout << "M_i^S = " << coeff[i].m_MiS << std::endl;
     }
 }
 
