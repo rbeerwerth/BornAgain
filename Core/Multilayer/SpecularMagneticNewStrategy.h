@@ -23,8 +23,13 @@
 
 class Slice;
 
-//! Implements the matrix formalism for the calculation of wave amplitudes of
-//! the coherent wave solution in a multilayer with magnetization.
+//! Implements the magnetic Fresnel computation with Nevot-Croce roughness
+//!
+//! Implements the transfer matrix formalism for the calculation of wave
+//! amplitudes of the coherent wave solution in a multilayer with magnetization.
+//! For a description, see internal
+//! document "Polarized Implementation of the Transfer Matrix Method"
+//!
 //! @ingroup algorithms_internal
 class BA_CORE_API_ SpecularMagneticNewStrategy : public ISpecularStrategy
 {
