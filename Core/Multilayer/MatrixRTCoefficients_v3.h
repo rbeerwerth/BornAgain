@@ -28,7 +28,8 @@ class BA_CORE_API_ MatrixRTCoefficients_v3 : public ILayerRTCoefficients
 public:
     friend class SpecularMagneticNewStrategy;
 
-    MatrixRTCoefficients_v3(double kz_sign, Eigen::Vector2cd eigenvalues, kvector_t b, double magnetic_SLD);
+    MatrixRTCoefficients_v3(double kz_sign, Eigen::Vector2cd eigenvalues, kvector_t b,
+                            double magnetic_SLD);
     MatrixRTCoefficients_v3(const MatrixRTCoefficients_v3& other);
     ~MatrixRTCoefficients_v3() override;
 
@@ -51,14 +52,15 @@ public:
     Eigen::Matrix2cd computeP() const;
     Eigen::Matrix2cd computeInverseP() const;
 
-    std::pair<Eigen::Matrix2cd, Eigen::Matrix2cd> computeDeltaMatrix(double thickness, double prefactor);
+    std::pair<Eigen::Matrix2cd, Eigen::Matrix2cd> computeDeltaMatrix(double thickness,
+                                                                     double prefactor);
 
     Eigen::Matrix2cd getReflectionMatrix() const override;
 
 private:
     double m_kz_sign; //! wave propagation direction (-1 for direct one, 1 for time reverse)
     Eigen::Vector2cd m_lambda; //!< eigenvalues for wave propagation
-    kvector_t m_b; //!< unit magnetic field vector
+    kvector_t m_b;             //!< unit magnetic field vector
     double m_magnetic_SLD;
 
     Eigen::Vector4cd m_t_r_plus;  // amplitudes for incoming up-polarization

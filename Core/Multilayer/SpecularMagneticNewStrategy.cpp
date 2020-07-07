@@ -13,22 +13,21 @@
 // ************************************************************************** //
 
 #include "Core/Multilayer/SpecularMagneticNewStrategy.h"
-#include "Core/Multilayer/KzComputation.h"
-#include "Core/Multilayer/LayerRoughness.h"
 #include "Core/Basics/PhysicalConstants.h"
 #include "Core/Computation/Slice.h"
+#include "Core/Multilayer/KzComputation.h"
+#include "Core/Multilayer/LayerRoughness.h"
 
-#include<iostream>
+#include <iostream>
 #include <unsupported/Eigen/MatrixFunctions>
 
-//TODO: create a test that compares forward and backward result
+// TODO: create a test that compares forward and backward result
 
 namespace
 {
 double magneticSLD(kvector_t B_field);
 Eigen::Vector2cd eigenvalues(complex_t kz, double b_mag);
 Eigen::Vector2cd checkForUnderflow(const Eigen::Vector2cd& eigenvs);
-
 
 // The factor 1e-18 is here to have unit: 1/T*nm^-2
 constexpr double magnetic_prefactor = PhysConsts::m_n * PhysConsts::g_factor_n * PhysConsts::mu_N
@@ -40,14 +39,14 @@ const LayerRoughness* GetBottomRoughness(const std::vector<Slice>& slices,
 } // namespace
 
 ISpecularStrategy::coeffs_t SpecularMagneticNewStrategy::Execute(const std::vector<Slice>& slices,
-                                                              const kvector_t& k) const
+                                                                 const kvector_t& k) const
 {
     return Execute(slices, KzComputation::computeReducedKz(slices, k));
 }
 
 ISpecularStrategy::coeffs_t
 SpecularMagneticNewStrategy::Execute(const std::vector<Slice>& slices,
-                                  const std::vector<complex_t>& kz) const
+                                     const std::vector<complex_t>& kz) const
 {
     if (slices.size() != kz.size())
         throw std::runtime_error("Number of slices does not match the size of the kz-vector");
@@ -61,7 +60,7 @@ SpecularMagneticNewStrategy::Execute(const std::vector<Slice>& slices,
 
 std::vector<MatrixRTCoefficients_v3>
 SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
-                                    const std::vector<complex_t>& kzs)
+                                       const std::vector<complex_t>& kzs)
 {
     if (slices.size() != kzs.size())
         throw std::runtime_error(
@@ -72,35 +71,36 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
     std::vector<MatrixRTCoefficients_v3> result;
     result.reserve(slices.size());
 
-    if( std::abs( kzs[0] ) < 10 * std::numeric_limits<double>::epsilon() )
-    {
+    if (std::abs(kzs[0]) < 10 * std::numeric_limits<double>::epsilon()) {
         for (size_t i = 0, size = slices.size(); i < size; ++i)
             result.emplace_back(0., Eigen::Vector2cd{0.0, 0.0}, kvector_t{0.0, 0.0, 0.0}, 0.0);
 
-        result[0].m_MS.topLeftCorner(2, 2)     = Eigen::Matrix2cd::Identity(2, 2);
-        result[0].m_MS.topRightCorner(2, 2)    = -Eigen::Matrix2cd::Identity(2, 2);
-        result[0].m_MS.bottomLeftCorner(2, 2)  = -Eigen::Matrix2cd::Identity(2, 2);
+        result[0].m_MS.topLeftCorner(2, 2) = Eigen::Matrix2cd::Identity(2, 2);
+        result[0].m_MS.topRightCorner(2, 2) = -Eigen::Matrix2cd::Identity(2, 2);
+        result[0].m_MS.bottomLeftCorner(2, 2) = -Eigen::Matrix2cd::Identity(2, 2);
         result[0].m_MS.bottomRightCorner(2, 2) = Eigen::Matrix2cd::Identity(2, 2);
         result[0].m_MS /= 2.;
 
         auto R = result[0].getReflectionMatrix();
-        result[0].m_t_r_plus  << 1., 0., R(0, 0), R(1, 0);
+        result[0].m_t_r_plus << 1., 0., R(0, 0), R(1, 0);
         result[0].m_t_r_minus << 0., 1., R(0, 1), R(1, 1);
 
         return result;
     }
 
-//    std::cout << "q = " << 2. * kzs.front() << std::endl;
+    //    std::cout << "q = " << 2. * kzs.front() << std::endl;
 
     const double kz_sign = kzs.front().real() > 0.0 ? 1.0 : -1.0; // save sign to restore it later
     auto B_0 = slices.front().bField();
     result.emplace_back(kz_sign, eigenvalues(kzs.front(), 0.0), kvector_t{0.0, 0.0, 0.0}, 0.0);
-    for (size_t i = 1, size = slices.size(); i < size; ++i)
-    {
+    for (size_t i = 1, size = slices.size(); i < size; ++i) {
         auto B = slices[i].bField() - B_0;
         auto magnetic_SLD = magneticSLD(B);
         result.emplace_back(kz_sign, checkForUnderflow(eigenvalues(kzs[i], magnetic_SLD)),
-                            B.mag() > std::numeric_limits<double>::epsilon() * 10 ? B/B.mag() : kvector_t{0.0, 0.0, 0.0}, magnetic_SLD);
+                            B.mag() > std::numeric_limits<double>::epsilon() * 10
+                                ? B / B.mag()
+                                : kvector_t{0.0, 0.0, 0.0},
+                            magnetic_SLD);
     }
 
     // calculate the matrices M_i
@@ -115,68 +115,65 @@ SpecularMagneticNewStrategy::computeTR(const std::vector<Slice>& slices,
     return result;
 }
 
-void SpecularMagneticNewStrategy::computeInterfaceTransferMatrices(std::vector<MatrixRTCoefficients_v3>& coeff,
-                                                                   const std::vector<Slice>& slices)
+void SpecularMagneticNewStrategy::computeInterfaceTransferMatrices(
+    std::vector<MatrixRTCoefficients_v3>& coeff, const std::vector<Slice>& slices)
 {
     for (size_t i = 0, interfaces = slices.size() - 1; i < interfaces; ++i) {
         double sigma = 0.;
-        if(const auto roughness = GetBottomRoughness(slices, i))
+        if (const auto roughness = GetBottomRoughness(slices, i))
             sigma = roughness->getSigma();
 
         Eigen::Matrix2cd roughness_sum{Eigen::Matrix2cd::Identity()};
         Eigen::Matrix2cd roughness_diff{Eigen::Matrix2cd::Identity()};
-        if(sigma != 0.)
-        {
+        if (sigma != 0.) {
             auto pi = coeff[i].computeP();
-            auto pi1 = coeff[i+1].computeP();
+            auto pi1 = coeff[i + 1].computeP();
 
-            auto factor_sum  = Eigen::Matrix2cd{-sigma * sigma / 2. * (pi1 + pi) * (pi1 + pi)};
+            auto factor_sum = Eigen::Matrix2cd{-sigma * sigma / 2. * (pi1 + pi) * (pi1 + pi)};
             auto factor_diff = Eigen::Matrix2cd{-sigma * sigma / 2. * (pi1 - pi) * (pi1 - pi)};
 
-            roughness_sum  = factor_sum.exp();
+            roughness_sum = factor_sum.exp();
             roughness_diff = factor_diff.exp();
         }
 
-        auto mproduct = Eigen::Matrix2cd( coeff[i].computeInverseP() * coeff[i+1].computeP() );
-        auto mp       = Eigen::Matrix2cd( (Eigen::Matrix2cd::Identity() + mproduct ) * roughness_diff);
-        auto mm       = Eigen::Matrix2cd( (Eigen::Matrix2cd::Identity() - mproduct ) * roughness_sum);
-        auto delta    = coeff[i].computeDeltaMatrix(slices[i].thickness(), 1.);
+        auto mproduct = Eigen::Matrix2cd(coeff[i].computeInverseP() * coeff[i + 1].computeP());
+        auto mp = Eigen::Matrix2cd((Eigen::Matrix2cd::Identity() + mproduct) * roughness_diff);
+        auto mm = Eigen::Matrix2cd((Eigen::Matrix2cd::Identity() - mproduct) * roughness_sum);
+        auto delta = coeff[i].computeDeltaMatrix(slices[i].thickness(), 1.);
         auto deltaInv = coeff[i].computeDeltaMatrix(slices[i].thickness(), -1.);
 
         coeff[i].m_MiL = Eigen::Matrix4cd::Zero();
-        coeff[i].m_MiL.block<2,2>(0, 0) = std::get<0>(deltaInv) * mp;
-        coeff[i].m_MiL.block<2,2>(0, 2) = std::get<0>(deltaInv) * mm;
-        coeff[i].m_MiL.block<2,2>(2, 0) = std::get<0>(delta) * mm;
-        coeff[i].m_MiL.block<2,2>(2, 2) = std::get<0>(delta) * mp;
+        coeff[i].m_MiL.block<2, 2>(0, 0) = std::get<0>(deltaInv) * mp;
+        coeff[i].m_MiL.block<2, 2>(0, 2) = std::get<0>(deltaInv) * mm;
+        coeff[i].m_MiL.block<2, 2>(2, 0) = std::get<0>(delta) * mm;
+        coeff[i].m_MiL.block<2, 2>(2, 2) = std::get<0>(delta) * mp;
 
         coeff[i].m_MiS = Eigen::Matrix4cd::Zero();
-        coeff[i].m_MiS.block<2,2>(0, 0) = std::get<1>(deltaInv) * mp;
-        coeff[i].m_MiS.block<2,2>(0, 2) = std::get<1>(deltaInv) * mm;
-        coeff[i].m_MiS.block<2,2>(2, 0) = std::get<1>(delta) * mm;
-        coeff[i].m_MiS.block<2,2>(2, 2) = std::get<1>(delta) * mp;
+        coeff[i].m_MiS.block<2, 2>(0, 0) = std::get<1>(deltaInv) * mp;
+        coeff[i].m_MiS.block<2, 2>(0, 2) = std::get<1>(deltaInv) * mm;
+        coeff[i].m_MiS.block<2, 2>(2, 0) = std::get<1>(delta) * mm;
+        coeff[i].m_MiS.block<2, 2>(2, 2) = std::get<1>(delta) * mp;
 
         coeff[i].m_MiL /= 2.;
         coeff[i].m_MiS /= 2.;
     }
 }
 
-void SpecularMagneticNewStrategy::computeTotalTransferMatrices(std::vector<MatrixRTCoefficients_v3>& coeff)
+void SpecularMagneticNewStrategy::computeTotalTransferMatrices(
+    std::vector<MatrixRTCoefficients_v3>& coeff)
 {
-    if(coeff.size() == 2)
-    {
+    if (coeff.size() == 2) {
         coeff[0].m_ML = coeff[0].m_MiL;
         coeff[0].m_MS = coeff[0].m_MiS;
-    }
-    else
-    {
-        coeff[coeff.size()-2].m_ML = coeff[coeff.size()-2].m_MiL;
-        coeff[coeff.size()-2].m_MS = coeff[coeff.size()-2].m_MiS;
+    } else {
+        coeff[coeff.size() - 2].m_ML = coeff[coeff.size() - 2].m_MiL;
+        coeff[coeff.size() - 2].m_MS = coeff[coeff.size() - 2].m_MiS;
     }
 
-    for (int i = coeff.size() - 3; i >= 0; --i)
-    {
-        coeff[i].m_ML = coeff[i].m_MiL * coeff[i+1].m_ML + coeff[i].m_MiS * coeff[i+1].m_ML + coeff[i].m_MiL * coeff[i+1].m_MS;
-        coeff[i].m_MS = coeff[i].m_MiS * coeff[i+1].m_MS;
+    for (int i = coeff.size() - 3; i >= 0; --i) {
+        coeff[i].m_ML = coeff[i].m_MiL * coeff[i + 1].m_ML + coeff[i].m_MiS * coeff[i + 1].m_ML
+                        + coeff[i].m_MiL * coeff[i + 1].m_MS;
+        coeff[i].m_MS = coeff[i].m_MiS * coeff[i + 1].m_MS;
     }
 }
 
@@ -184,32 +181,31 @@ void SpecularMagneticNewStrategy::calculateAmplitudes(std::vector<MatrixRTCoeffi
                                                       const std::vector<Slice>& slices)
 {
     auto R = coeff[0].getReflectionMatrix();
-    coeff[0].m_t_r_plus  << 1., 0., R(0, 0), R(1, 0);
+    coeff[0].m_t_r_plus << 1., 0., R(0, 0), R(1, 0);
     coeff[0].m_t_r_minus << 0., 1., R(0, 1), R(1, 1);
 
-    for(size_t i = 0, interfaces = slices.size() - 1; i < interfaces; ++i)
-    {
-        auto PInv = Eigen::Matrix2cd( coeff[i+1].computeInverseP() * coeff[i].computeP() );
+    for (size_t i = 0, interfaces = slices.size() - 1; i < interfaces; ++i) {
+        auto PInv = Eigen::Matrix2cd(coeff[i + 1].computeInverseP() * coeff[i].computeP());
         auto mp = 0.5 * (Eigen::Matrix2cd::Identity() + PInv);
         auto mm = 0.5 * (Eigen::Matrix2cd::Identity() - PInv);
-        auto delta    = coeff[i].computeDeltaMatrix(slices[i].thickness(), 1.);
+        auto delta = coeff[i].computeDeltaMatrix(slices[i].thickness(), 1.);
         auto deltaInv = coeff[i].computeDeltaMatrix(slices[i].thickness(), -1.);
 
         Eigen::Matrix4cd MS{Eigen::Matrix4cd::Zero()};
         Eigen::Matrix4cd ML{Eigen::Matrix4cd::Zero()};
 
-        ML.block<2,2>(0, 2) = mm * std::get<0>(deltaInv);
-        ML.block<2,2>(2, 2) = mp * std::get<0>(deltaInv);
-        ML.block<2,2>(2, 0) = mm * std::get<0>(delta);
-        ML.block<2,2>(0, 0) = mp * std::get<0>(delta);
+        ML.block<2, 2>(0, 2) = mm * std::get<0>(deltaInv);
+        ML.block<2, 2>(2, 2) = mp * std::get<0>(deltaInv);
+        ML.block<2, 2>(2, 0) = mm * std::get<0>(delta);
+        ML.block<2, 2>(0, 0) = mp * std::get<0>(delta);
 
-        MS.block<2,2>(0, 2) = mm * std::get<1>(deltaInv);
-        MS.block<2,2>(2, 2) = mp * std::get<1>(deltaInv);
-        MS.block<2,2>(2, 0) = mm * std::get<1>(delta);
-        MS.block<2,2>(0, 0) = mp * std::get<1>(delta);
+        MS.block<2, 2>(0, 2) = mm * std::get<1>(deltaInv);
+        MS.block<2, 2>(2, 2) = mp * std::get<1>(deltaInv);
+        MS.block<2, 2>(2, 0) = mm * std::get<1>(delta);
+        MS.block<2, 2>(0, 0) = mp * std::get<1>(delta);
 
-        coeff[i+1].m_t_r_plus  = ( MS + ML ) * coeff[i].m_t_r_plus;
-        coeff[i+1].m_t_r_minus = ( MS + ML ) * coeff[i].m_t_r_minus;
+        coeff[i + 1].m_t_r_plus = (MS + ML) * coeff[i].m_t_r_plus;
+        coeff[i + 1].m_t_r_minus = (MS + ML) * coeff[i].m_t_r_minus;
     }
 }
 
