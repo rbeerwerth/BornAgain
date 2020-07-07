@@ -15,9 +15,9 @@
 #ifndef SPECULARMAGNETICNEWSTRATEGY_H
 #define SPECULARMAGNETICNEWSTRATEGY_H
 
-#include "ISpecularStrategy.h"
-#include "MatrixRTCoefficients_v3.h"
-#include "Vectors3D.h"
+#include "Core/Multilayer/ISpecularStrategy.h"
+#include "Core/Multilayer/MatrixRTCoefficients_v3.h"
+#include "Core/Vector/Vectors3D.h"
 #include <memory>
 #include <vector>
 

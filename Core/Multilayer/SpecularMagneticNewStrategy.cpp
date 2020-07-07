@@ -12,11 +12,11 @@
 //
 // ************************************************************************** //
 
-#include "SpecularMagneticNewStrategy.h"
-#include "KzComputation.h"
-#include "LayerRoughness.h"
-#include "PhysicalConstants.h"
-#include "Slice.h"
+#include "Core/Multilayer/SpecularMagneticNewStrategy.h"
+#include "Core/Multilayer/KzComputation.h"
+#include "Core/Multilayer/LayerRoughness.h"
+#include "Core/Basics/PhysicalConstants.h"
+#include "Core/Computation/Slice.h"
 
 #include<iostream>
 #include <unsupported/Eigen/MatrixFunctions>
