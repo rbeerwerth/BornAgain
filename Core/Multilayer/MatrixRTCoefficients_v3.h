@@ -12,8 +12,8 @@
 //
 // ************************************************************************** //
 
-#ifndef MATRIXRTCOEFFICIENTS_V3_H
-#define MATRIXRTCOEFFICIENTS_V3_H
+#ifndef BORNAGAIN_CORE_MULTILAYER_MATRIXRTCOEFFICIENTS_V3_H
+#define BORNAGAIN_CORE_MULTILAYER_MATRIXRTCOEFFICIENTS_V3_H
 
 #include "Core/Multilayer/ILayerRTCoefficients.h"
 #include "Core/Vector/Vectors3D.h"
@@ -80,4 +80,4 @@ private:
     Eigen::Matrix2cd T2Matrix() const;
 };
 
-#endif // MATRIXRTCOEFFICIENTS_V3_H
+#endif // BORNAGAIN_CORE_MULTILAYER_MATRIXRTCOEFFICIENTS_V3_H
