@@ -25,6 +25,13 @@
 
 //! @ingroup algorithms_internal
 
+//! Interface for the Fresnel computations, both in the scalar and magnetic case
+//!
+//! Inherited by SpecularScalarStrategy, SpecularMagneticOldStrategy,
+//! SpecularMagneticStrategy, SpecularMagneticNewStrategy
+
+//! @ingroup algorithms_internal
+
 class BA_CORE_API_ ISpecularStrategy
 {
 public:

@@ -16,11 +16,13 @@
 
 #include <iostream>
 
+
 namespace
 {
 using matrixType = Eigen::Matrix4cd;
 
 constexpr complex_t I = complex_t(0.0, 1.0);
+
 complex_t elementProductDifference(const matrixType& ML, const matrixType& MS, size_t i0, size_t i1,
                                    size_t j0, size_t j1, size_t k0, size_t k1, size_t l0,
                                    size_t l1);
@@ -233,16 +235,16 @@ Eigen::Matrix2cd MatrixRTCoefficients_v3::getReflectionMatrix() const
 {
     Eigen::Matrix2cd R;
 
-    auto denominator = elementProductDifference(m_ML, m_MS, 0, 1, 1, 0, 0, 0, 1, 1);
+    auto denominator = elementProductDifference(m_ML, m_MS, 0, 1,  1, 0,  0, 0,  1, 1);
 
     if (std::isinf(denominator.real()) || std::isinf(denominator.imag())
         || std::isnan(denominator.real()) || std::isinf(denominator.imag()))
         throw std::runtime_error("Pushed this beyond numerical limits");
 
-    R(0, 0) = elementProductDifference(m_ML, m_MS, 2, 1, 1, 0, 2, 0, 1, 1);
-    R(0, 1) = elementProductDifference(m_ML, m_MS, 2, 0, 0, 1, 0, 0, 2, 1);
-    R(1, 1) = elementProductDifference(m_ML, m_MS, 3, 0, 0, 1, 3, 1, 0, 0);
-    R(1, 0) = elementProductDifference(m_ML, m_MS, 3, 1, 1, 0, 3, 0, 1, 1);
+    R(0, 0) = elementProductDifference(m_ML, m_MS, 2, 1,  1, 0,  2, 0,  1, 1);
+    R(0, 1) = elementProductDifference(m_ML, m_MS, 2, 0,  0, 1,  0, 0,  2, 1);
+    R(1, 1) = elementProductDifference(m_ML, m_MS, 3, 0,  0, 1,  3, 1,  0, 0);
+    R(1, 0) = elementProductDifference(m_ML, m_MS, 3, 1,  1, 0,  3, 0,  1, 1);
 
     //    std::cout << "R = " << R << std::endl;
     //    std::cout << "denom = " << denominator << std::endl;

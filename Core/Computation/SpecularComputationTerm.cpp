@@ -17,6 +17,7 @@
 #include "Core/Multilayer/ScalarRTCoefficients.h"
 #include "Core/Multilayer/SpecularScalarStrategy.h"
 #include "Core/SimulationElement/SpecularSimulationElement.h"
+
 #include <iostream>
 
 SpecularComputationTerm::SpecularComputationTerm(std::unique_ptr<ISpecularStrategy> strategy)
