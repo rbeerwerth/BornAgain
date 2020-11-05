@@ -135,8 +135,6 @@ def qr(result):
 #                         Plot Handling                            #
 ####################################################################
 
-
-
 def plot(qs, rs, exps, labels, filename):
     """
     Plot the simulated result together with the experimental data
@@ -234,8 +232,8 @@ def get_Experimental_data(qmin, qmax):
         data_pp = normalizeData(input_Data[0])
         data_mm = normalizeData(input_Data[1])
         
-        get_Experimental_data.data_pp = data_pp
-        get_Experimental_data.data_mm = data_mm
+        get_Experimental_data.raw_data_pp = data_pp
+        get_Experimental_data.raw_data_mm = data_mm
         get_Experimental_data.raw_data = True
     
     return ( filterData( data_pp, qmin, qmax) , 
