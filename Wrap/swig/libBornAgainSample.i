@@ -195,6 +195,7 @@
 %include "Sample/Aggregate/ParticleLayout.h"
 
 %include "Sample/Multilayer/Layer.h"
+%include "Sample/Slice/LayerInterface.h"
 %include "Sample/Slice/LayerRoughness.h"
 %include "Sample/Multilayer/MultiLayer.h"
 
